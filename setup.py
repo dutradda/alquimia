@@ -25,12 +25,9 @@ if sys.version_info < (2, 7):
 elif sys.version_info >= (3, 0):
     raise Exception("Alquimia do not support Python 3")
 
-def readme():
-    return open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
-
 setup(
     name='Alquimia',
-    version='0.0.1',
+    version='0.0.3',
     author='Diogo Dutra',
     author_email='dutradda@gmail.com',
     description='An API to work with JSON schemas in SQLAlchemy',
@@ -38,7 +35,7 @@ setup(
     keywords='json sqlachemy sql orm database',
     url='http://packages.python.org/alquimia',
     packages=['alquimia', 'tests'],
-    long_description=readme(),
+    package_data={'alquimia': ['schemas/models.json']},
     requires=['sqlalchemy', 'jsonschema'],
     classifiers=[
         'Programming Language :: Python :: 2.7',
