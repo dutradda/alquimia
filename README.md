@@ -7,7 +7,7 @@ $ pip install alquimia
 ```
 
 ## Usage example
-```
+```python
 from alquimia import AlquimiaModels
 
 models_dict = {
@@ -34,7 +34,7 @@ models['person'].insert(person)
 qr =  models['address'].query({'street': "john's street"})
 print qr
 ```
-####Output:
+Output:
 ```
 {'street': u"john's street", 'id': 1}
 ```
