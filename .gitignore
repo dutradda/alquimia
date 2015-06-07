@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Sublime
+alquimia.sublime-project
+alquimia.sublime-workspace
