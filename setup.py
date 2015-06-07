@@ -27,7 +27,7 @@ elif sys.version_info >= (3, 0):
 
 setup(
     name='Alquimia',
-    version='0.0.5',
+    version='0.0.6',
     author='Diogo Dutra',
     author_email='dutradda@gmail.com',
     description='An API to work with JSON schemas in SQLAlchemy',
