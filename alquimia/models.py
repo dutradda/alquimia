@@ -276,9 +276,6 @@ class AlquimiaModels(dict):
     @property
     def session(self):
         return self._session
-    
-    def _set_relationship(self, rel):
-        pass
 
     def _build(self, base_model, models_attrs):
         models = {}
