@@ -155,11 +155,12 @@ class TestAlquimiaModelMeta(object):
         assert query['c4'] == t1_t2_query['c4']
         assert query['t2']['c1'] == t1_t2_query['t2']['c1']
 
-    def test_modelmeta_query_2(self, models, t1_t2_query, t1_t2_obj):
+    def test_modelmeta_query_4(self, models, t1_t2_query, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         models['t1'].insert(t1_t2_obj)
+        models['t1'].insert([t1_t2_obj, t1_t2_obj])
         query = models['t1'].query(t1_t2_query)
-        assert len(query) == 2
+        assert len(query) == 4
         query = query[0]
         assert query['c4'] == t1_t2_query['c4']
         assert query['t2']['c1'] == t1_t2_query['t2']['c1']
