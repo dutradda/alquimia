@@ -28,25 +28,26 @@ def build_models_attributes():
     models_attributes = Dict({
         't1': {
             '__table__': sqlalchemy.Table('t1', metadata, t1_id,
-                sqlalchemy.Column(sqlalchemy.Boolean, name='c1'),
-                sqlalchemy.Column(sqlalchemy.Integer, name='c2'),
+                sqlalchemy.Column(sqlalchemy.Boolean, name='c1', autoincrement=False),
+                sqlalchemy.Column(sqlalchemy.Integer, name='c2', autoincrement=False),
                 sqlalchemy.Column(sqlalchemy.Float, name='c3'),
                 sqlalchemy.Column(sqlalchemy.String(255), name='c4'),
                 sqlalchemy.Column(sqlalchemy.Text(), name='c5'),
-                sqlalchemy.Column(sqlalchemy.Boolean, name='c6', nullable=True),
-                sqlalchemy.Column(sqlalchemy.Integer, name='c7', primary_key=False),
-                sqlalchemy.Column(sqlalchemy.Float, name='c8', primary_key=False,
-                                                                  autoincrement=False),
+                sqlalchemy.Column(sqlalchemy.Boolean, name='c6', nullable=True, autoincrement=False),
+                sqlalchemy.Column(sqlalchemy.Integer, name='c7', primary_key=False, autoincrement=False),
+                sqlalchemy.Column(sqlalchemy.Float, name='c8', primary_key=False),
                 sqlalchemy.Column(sqlalchemy.String(255), name='c9', default='test'),
                 sqlalchemy.Column(sqlalchemy.Text(), name='c10'),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id',
                                                              onupdate='CASCADE',
                                                              ondelete='CASCADE'),
-                                                                         name='t1_id'),
+                                                                         name='t1_id',
+                                                                         autoincrement=False),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t2.id',
                                                              onupdate='CASCADE',
                                                              ondelete='CASCADE'),
                                                                          name='t2_id',
+                                                                         autoincrement=False,
                                                                          primary_key=False)),
             't1': sqlalchemy.orm.relationship('t1', cascade='all', remote_side=[t1_id]),
             't2': sqlalchemy.orm.relationship('t2', cascade='all',
@@ -70,7 +71,8 @@ def build_models_attributes():
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id',
                                                                  onupdate='CASCADE',
                                                                  ondelete='CASCADE'),
-                                                                             name='t1_id')),
+                                                                             name='t1_id',
+                                                                         autoincrement=False)),
             't1': sqlalchemy.orm.relationship('t1', cascade='all',
                         backref=sqlalchemy.orm.backref('t4', cascade='all,delete-orphan'))
         },
@@ -98,20 +100,20 @@ def build_models_attributes():
     })
 
     sqlalchemy.Table('t6_t2_association', metadata,
-    sqlalchemy.Column('t6_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t6.id', onupdate='CASCADE', ondelete='CASCADE')),
-    sqlalchemy.Column('t2_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t2.id', onupdate='CASCADE', ondelete='CASCADE')))
+    sqlalchemy.Column('t6_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t6.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False),
+    sqlalchemy.Column('t2_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t2.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False))
 
     sqlalchemy.Table('t6_t1_association', metadata,
-    sqlalchemy.Column('t6_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t6.id', onupdate='CASCADE', ondelete='CASCADE')),
-    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE')))
+    sqlalchemy.Column('t6_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t6.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False),
+    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False))
 
     sqlalchemy.Table('t5_t1_association', metadata,
-    sqlalchemy.Column('t5_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t5.id', onupdate='CASCADE', ondelete='CASCADE')),
-    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE')))
+    sqlalchemy.Column('t5_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t5.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False),
+    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False))
 
     sqlalchemy.Table('t1_t3_association', metadata,
-    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE')),
-    sqlalchemy.Column('t3_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t3.id', onupdate='CASCADE', ondelete='CASCADE')))
+    sqlalchemy.Column('t1_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False),
+    sqlalchemy.Column('t3_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t3.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False))
 
     models_attributes.metadata = metadata
     return models_attributes

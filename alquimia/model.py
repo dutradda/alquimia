@@ -24,7 +24,8 @@ import weakref
 class AlquimiaModelMeta(DeclarativeMeta):
     def __init__(cls, classname, bases, dict_):
         DeclarativeMeta.__init__(cls, classname, bases, dict_)
-        attrs = {k:v for k,v in cls.__dict__.items() if isinstance(v, InstrumentedAttribute)}
+        attrs = {k:v for k,v in cls.__dict__.items() \
+                                       if isinstance(v, InstrumentedAttribute)}
         cls.__attrs__ = cls.__attributes__ = attrs
         cls._current_pos = 0
 
@@ -107,21 +108,20 @@ class AlquimiaModelMeta(DeclarativeMeta):
             session.query(cls).filter(cls.id == id_).delete()
         session.commit()
 
-    def _build_query_filter_rec(cls, query_dict, obj, comp_list=[]):
+    def _build_query_filter_rec(cls, query_dict, obj, filters):
         for prop_name, prop in query_dict.iteritems():
             if isinstance(prop, dict):
-                cls._build_query_filter_rec(prop, obj[prop_name], comp_list)
+                cls._build_query_filter_rec(prop, obj[prop_name], filters)
             else:
                 if hasattr(obj, 'model'):
                     obj = obj.model
-                comp_list.append(obj[prop_name] == prop)
-        return comp_list
+                filters.append(obj[prop_name] == prop)
+        return filters
 
     def query(cls, query_dict):
-        filters = cls._build_query_filter_rec(query_dict, cls)
+        filters = cls._build_query_filter_rec(query_dict, cls, [])
         session = cls.session()
-        return session.query(cls).filter(*filters).first()
-
+        return session.query(cls).filter(*filters).all()
 
 
 class AlquimiaModel(object):

@@ -16,23 +16,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import pytest
-from alquimia.models import ModelsAttributes, AlquimiaModels
+from alquimia.models import AlquimiaModels
 from sqlalchemy.testing.engines import mock_engine
 from sqlalchemy import MetaData, create_engine
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def user_models():
     return {
     't1': {
-        'c1': 'boolean',
-        'c2': 'integer',
+        'c1': {'type': 'boolean', 'autoincrement': False},
+        'c2': {'type': 'integer', 'autoincrement': False},
         'c3': 'float',
         'c4': 'string',
         'c5': 'text',
-        'c6': {'type': 'boolean', 'nullable': True},
-        'c7': {'type': 'integer', 'primary_key': False},
-        'c8': {'type': 'float', 'primary_key': False, 'autoincrement': False},
+        'c6': {'type': 'boolean', 'nullable': True, 'autoincrement': False},
+        'c7': {'type': 'integer', 'primary_key': False, 'autoincrement': False},
+        'c8': 'float',
         'c9': {'type': 'string', 'default': 'test'},
         'c10': {'type': 'text'},
         'relationships': ['t1', {'t2': {'primary_key': False}}, {'t3': 'many-to-many'}]
@@ -45,19 +46,39 @@ def user_models():
     't7': {}
     }
 
-@pytest.fixture
-def models_attributes(user_models):
-    return ModelsAttributes(user_models, MetaData())
+@pytest.fixture(scope='session')
+def db_uri():
+    return os.environ.get('ALQUIMIA_TEST_DB') or 'mysql://root:root@localhost:3600/alquimia_test'
+
+def models_finalizer(models_):
+    for model in models_.values():
+        s = model.session()
+        s.query(model).delete()
+        s.commit()
+        s.close()
+
+@pytest.fixture(scope='session')
+def models_create(request, user_models, db_uri):
+    metadata = MetaData(db_uri)
+    metadata.reflect()
+    metadata.drop_all()
+    
+    models_ = AlquimiaModels(db_uri, user_models, create=True)
+    return models_
 
 @pytest.fixture
-def models(request, user_models):
-    models_ = AlquimiaModels('mysql://root:root@localhost:3600/alquimia_test', user_models, create=True)
+def models(request, user_models, models_create, db_uri):
+    models_ = AlquimiaModels(db_uri, user_models)
     def fin():
-        for model in models_.values():
-            s = model.session()
-            s.query(model).delete()
-            s.commit()
-            s.close()
+        models_finalizer(models_)
+    request.addfinalizer(fin)
+    return models_
+
+@pytest.fixture
+def models_reflect(request, models_create, db_uri):
+    models_ = AlquimiaModels(db_uri)
+    def fin():
+        models_finalizer(models_)
     request.addfinalizer(fin)
     return models_
 
