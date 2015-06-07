@@ -5,7 +5,7 @@
         ".*": {
             "type": "object",
             "patternProperties": {
-                "^(?!relationships).*$": {
+                "^(?!relationships).*(?<!_id)$": {
                     "oneOf": [
                         {"$ref": "#/definitions/types"},
                         {
@@ -27,29 +27,16 @@
             "properties": {
                 "relationships": {
                     "oneOf": [
-                        {"type": "array",
-                        "items": {
-                            "oneOf": [
-                                {"type": "string"},
-                                {"type": "object",
-                                "patternProperties": {
-                                    ".*": {
-                                        "oneOf": [
-                                            {
-                                                "type": "string",
-                                                "pattern": "many-to-many|primary_key"
-                                            },
-                                            {"$ref": "#/definitions/relationships"}
-                                        ]
-                                    }
-                                },
-                                "additionalProperties": false} 
-                            ]
-                        }},
-                        {"type": "object",
-                        "patternProperties": {
-                            ".*": {"$ref": "#/definitions/relationships"}
-                        }}
+                        {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {"$ref": "#/definitions/relationships"},
+                                    {"type": "string"}
+                                ]
+                            }
+                        },
+                        {"$ref": "#/definitions/relationships"}
                     ]
                 }
             },
@@ -63,15 +50,28 @@
         },
         "relationships": {
             "type": "object",
-            "properties": {
-                "many-to-many": {"type": "boolean"},
-                "primary_key": {"type": "boolean"},
-                "lazy": {"type": "string"},
-                "innerjoin": {"type": "boolean"},
-                "order_by": {"type": "string"},
-                "remote_side": {"type": "string"}
-            },
-            "additionalProperties": false
+            "patternProperties": {
+                ".*": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "many-to-many|primary_key"
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "many-to-many": {"type": "boolean"},
+                                "primary_key": {"type": "boolean"},
+                                "lazy": {"type": "string"},
+                                "innerjoin": {"type": "boolean"},
+                                "order_by": {"type": "string"},
+                                "remote_side": {"type": "string"}
+                            },
+                            "additionalProperties": false
+                        }
+                    ]
+                }
+            }
         }
     }
 }

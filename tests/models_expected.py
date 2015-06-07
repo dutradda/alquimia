@@ -48,7 +48,7 @@ def build_models_attributes():
                                                              ondelete='CASCADE'),
                                                                          name='t2_id',
                                                                          autoincrement=False,
-                                                                         primary_key=False)),
+                                                                         primary_key=True)),
             't1': sqlalchemy.orm.relationship('t1', cascade='all', remote_side=[t1_id]),
             't2': sqlalchemy.orm.relationship('t2', cascade='all',
                 backref=sqlalchemy.orm.backref('t1', cascade='all,delete-orphan')),

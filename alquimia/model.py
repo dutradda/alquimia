@@ -18,6 +18,7 @@
 
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.orm.exc import NoResultFound
 import weakref
 
 
@@ -59,12 +60,12 @@ class AlquimiaModelMeta(DeclarativeMeta):
         return cls
 
     def next(cls):
-        self._current_pos += 1
-        if self._current_pos >= len(self.keys()):
-            self._current_pos = 0
+        cls._current_pos += 1
+        if cls._current_pos >= len(cls.keys()):
+            cls._current_pos = 0
             raise StopIteration
         else:
-            return self.keys()[self._current_pos - 1]
+            return cls.keys()[cls._current_pos - 1]
 
     def _build_objs(cls, obj):
         if not isinstance(obj, list):
@@ -77,9 +78,8 @@ class AlquimiaModelMeta(DeclarativeMeta):
         return objs
 
     def insert(cls, objs):
-        session = cls.session()
+        session = cls.session
         objs = cls._build_objs(objs)
-        session.add_all(objs)
         session.commit()
         return objs
 
@@ -91,20 +91,33 @@ class AlquimiaModelMeta(DeclarativeMeta):
                 obj[prop_name] = prop
 
     def update(cls, objs):
-        session = cls.session()
+        session = cls.session
         if not isinstance(objs, list):
             objs = [objs]
         for obj in objs:
-            new_obj = session.query(cls).filter(cls.id == obj.pop('id')).one()
+            try:
+                id_ = obj.pop('id')
+            except KeyError:
+                raise KeyError('objects must have an id!')
+            try:
+                new_obj = session.query(cls).filter(cls.id == id_).one()
+            except NoResultFound:
+                raise TypeError("invalid id '%s'" % id_)
             cls._update_rec(obj, new_obj)
         session.commit()
         return new_obj
 
     def delete(cls, ids):
-        session = cls.session()
+        session = cls.session
         if not isinstance(ids, list):
             ids = [ids]
         for id_ in ids:
+            try:
+                int(id_)
+            except ValueError:
+                session.rollback()
+                raise TypeError('%s.delete just receive ids (integer)!' \
+                                ' No delete operation was done.' % cls)
             session.query(cls).filter(cls.id == id_).delete()
         session.commit()
 
@@ -120,22 +133,33 @@ class AlquimiaModelMeta(DeclarativeMeta):
 
     def query(cls, query_dict):
         filters = cls._build_query_filter_rec(query_dict, cls, [])
-        session = cls.session()
-        return session.query(cls).filter(*filters).all()
+        session = cls.session
+        result = session.query(cls).filter(*filters).all()
+        return result
 
 
 class AlquimiaModel(object):
     def _check_attr(self, attr_name):
         if not type(self).has_key(attr_name):
-            raise TypeError("'%s' is not a valid model attribute!" % attr_name)
+            raise TypeError("'%s' is not a valid %s attribute!" % (attr_name,
+                                                                   type(self)))
 
     def __init__(self, **kwargs):
+        self._session = type(self).session
         for prop_name, prop in kwargs.iteritems():
             if isinstance(prop, dict):
                 self[prop_name] = type(self)[prop_name].model(**prop)
             else:
                 self[prop_name] = prop
+        self._session.add(self)
         self._current_pos = 0
+
+    def delete_(self):
+        self._session.delete(self)
+        self._session.commit()
+
+    def save(self):
+        self._session.commit()
 
     def __setitem__(self, item, value):
         self._check_attr(item)
@@ -160,7 +184,7 @@ class AlquimiaModel(object):
             return self.keys()[self._current_pos - 1]
 
     def has_key(self, key):
-        awld._check_attr(key)
+        self._check_attr(key)
         return hasattr(self, key)
 
     def keys(self):

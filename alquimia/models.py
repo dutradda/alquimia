@@ -148,6 +148,7 @@ class ModelsAtrrsReflect(dict):
 
 class ModelsAttributes(ModelsAtrrsReflect):
     def __init__(self, dict_, metadata, data_types=DATA_TYPES):
+        jsonschema.validate(dict_, SCHEMA)
         self._data_types = data_types
         ModelsAtrrsReflect.__init__(self, metadata, *[dict_])
 
@@ -163,28 +164,25 @@ class ModelsAttributes(ModelsAtrrsReflect):
                 type_ = column
                 column = {'args': [col_name, type_]}
             else:
-                type_ = column.pop('type', None)
-                if not type_:
-                    raise TypeError('Column %s.%s type must be defined!' \
-                                                      % (model_name, col_name))
-                column['args'] = [col_name, type_]
+                column['args'] = [col_name, column.pop('type')]
             self._build_column_instance(column, col_name, model_name)
+
+    def _build_rel_attr_dict(self, new_rels, rel):
+        if not isinstance(rel, dict):
+            new_rels[rel] = {}
+        elif not isinstance(rel.values()[0], dict):
+            new_rels[rel.keys()[0]] = {rel.values()[0]: True}
+        else:
+            new_rels[rel.keys()[0]] = rel.values()[0].copy()
 
     def _build_relationships_dict(self, rels):
         new_rels = {}
         if not isinstance(rels, dict):
             for rel in rels:
-                if not isinstance(rel, dict):
-                    new_rels[rel] = {}
-                elif rel.values()[0] == 'many-to-many':
-                    new_rels[rel.keys()[0]] = {'many-to-many': True}
-                elif rel.values()[0] == 'primary_key':
-                    new_rels[rel.keys()[0]] = {'primary_key': True}
-                else:
-                    new_rels[rel.keys()[0]] = rel.values()[0]
+                self._build_rel_attr_dict(new_rels, rel)
         else:
             for k, v in rels.iteritems():
-                new_rels[k] = type(v)(v)
+                self._build_rel_attr_dict(new_rels, {k: v})
         return new_rels
 
     def _build_relationship_column(self, rel_name, model_name, primary_key):
@@ -204,9 +202,6 @@ class ModelsAttributes(ModelsAtrrsReflect):
         rels_dict = self._build_relationships_dict(rels_model)
         rels = {}
         for rel_name, rel in rels_dict.iteritems():
-            if self.has_key(rel_name+'_id'):
-                raise TypeError(rel+'_id is a alquimia primitive, '\
-                                                               "don't use it!")
             mtm_table_name = rel.pop('many-to-many', None)
             if mtm_table_name is not None:
                 mtm_table_name = '%s_%s_association' % (model_name, rel_name)
@@ -259,7 +254,8 @@ class AlquimiaModels(dict):
             engine = create_engine(db_url)
         base_model = declarative_base(engine, metaclass=AlquimiaModelMeta,
                          cls=AlquimiaModel, constructor=AlquimiaModel.__init__)
-        self._session = sessionmaker(engine)
+        self._session_class = sessionmaker(engine)
+        self._session = self._session_class()
         self._metadata = base_model.metadata
         if dict_ is not None:
             attrs = ModelsAttributes(dict_, self._metadata, data_types)
@@ -280,7 +276,7 @@ class AlquimiaModels(dict):
     def _build(self, base_model, models_attrs):
         models = {}
         for model_name, attrs in models_attrs.iteritems():
-            attrs.update({'session': self._session})
+            attrs.update({'session': self.session})
             model = type(model_name, (base_model,), attrs)
             models[model_name] = model
 
