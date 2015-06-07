@@ -59,12 +59,12 @@ class AlquimiaModelMeta(DeclarativeMeta):
         return cls
 
     def next(cls):
-        if cls._current_pos > len(cls.__attributes__.keys()):
-            cls._current_pos = 0
+        self._current_pos += 1
+        if self._current_pos >= len(self.keys()):
+            self._current_pos = 0
             raise StopIteration
         else:
-            cls._current_pos += 1
-            return cls.__attributes__.keys()[cls._current_pos - 1]
+            return self.keys()[self._current_pos - 1]
 
     def _build_objs(cls, obj):
         if not isinstance(obj, list):
@@ -152,11 +152,11 @@ class AlquimiaModel(object):
         return self
 
     def next(self):
-        if self._current_pos > len(self.keys()):
+        self._current_pos += 1
+        if self._current_pos >= len(self.keys()):
             self._current_pos = 0
             raise StopIteration
         else:
-            self._current_pos += 1
             return self.keys()[self._current_pos - 1]
 
     def has_key(self, key):
