@@ -36,7 +36,7 @@ print qr
 ```
 Output:
 ```
-{'street': u"john's street", 'id': 1}
+[{'street': u"john's street", 'id': 1}]
 ```
 
 Detailed usage and documantion is in working process.
