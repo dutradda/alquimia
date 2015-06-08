@@ -144,8 +144,13 @@ class AlquimiaModel(object):
             raise TypeError("'%s' is not a valid %s attribute!" % (attr_name,
                                                                    type(self)))
 
+    def __new__(cls, **kwargs):
+        inst = object.__new__(cls)
+        inst.show_otm = False
+        inst._session = cls.session
+        return inst
+
     def __init__(self, **kwargs):
-        self._session = type(self).session
         for prop_name, prop in kwargs.iteritems():
             if isinstance(prop, dict):
                 self[prop_name] = type(self)[prop_name].model(**prop)
@@ -161,6 +166,10 @@ class AlquimiaModel(object):
     def save(self):
         self._session.commit()
 
+    @property
+    def session(self):
+        return self._session
+
     def __setitem__(self, item, value):
         self._check_attr(item)
         setattr(self, item, value)
@@ -169,8 +178,18 @@ class AlquimiaModel(object):
         self._check_attr(item)
         return getattr(self, item)
 
+    def todict(self, depth=0):
+        if not self.show_otm:
+            attrs = set(self.keys()) - set(self.otm)
+            return {attr:self[attr] for attr in attrs}
+        self.show_otm = False
+        return dict(self)
+
     def __repr__(self):
-        return str(dict(self))
+        return self.todict().__repr__()
+
+    def __eq__(self, other):
+        return self.todict() == dict(other)
 
     def __iter__(self):
         return self

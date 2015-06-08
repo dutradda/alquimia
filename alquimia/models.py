@@ -204,10 +204,12 @@ class ModelsAttributes(ModelsAtrrsReflect):
         for rel_name, rel in rels_dict.iteritems():
             mtm_table_name = rel.pop('many-to-many', None)
             if mtm_table_name is not None:
-                mtm_table_name = '%s_%s_association' % (model_name, rel_name)
-                self._build_many_to_many_table(model_name, rel_name,
+                if not self[model_name].has_key(rel_name):
+                    mtm_table_name = '%s_%s_association' % \
+                                                         (model_name, rel_name)
+                    self._build_many_to_many_table(model_name, rel_name,
                                                                 mtm_table_name)
-                self._build_many_to_many_rel(rel_name,
+                    self._build_many_to_many_rel(rel_name,
                                                     model_name, mtm_table_name)
             else:
                 primary_key = rel.pop('primary_key', False)

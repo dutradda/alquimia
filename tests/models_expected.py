@@ -59,7 +59,10 @@ def build_models_attributes():
         't2': {
             '__table__': sqlalchemy.Table('t2', metadata,
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
-                sqlalchemy.Column(sqlalchemy.String, name='c1'))
+                sqlalchemy.Column(sqlalchemy.String, name='c1')),
+            't6': sqlalchemy.orm.relationship('t6', secondary='t6_t2_association',
+                                                             cascade='all',
+                                                             backref=sqlalchemy.orm.backref('t2', cascade='all'))
         },
         't3': {
             '__table__': sqlalchemy.Table('t3', metadata,
@@ -88,10 +91,7 @@ def build_models_attributes():
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id')),
             't1': sqlalchemy.orm.relationship('t1', secondary='t6_t1_association',
                                                             cascade='all',
-                                                             backref=sqlalchemy.orm.backref('t6', cascade='all')),
-            't2': sqlalchemy.orm.relationship('t2', secondary='t6_t2_association',
-                                                             cascade='all',
-                                                             backref=sqlalchemy.orm.backref('t6', cascade='all'))
+                                                             backref=sqlalchemy.orm.backref('t6', cascade='all'))   
         },
         't7': {
             '__table__': sqlalchemy.Table('t7', metadata,

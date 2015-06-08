@@ -38,7 +38,10 @@ def user_models():
             'c10': {'type': 'text'},
             'relationships': ['t1', {'t2': {'primary_key': True}}, {'t3': 'many-to-many'}]
         },
-        't2': {'c1': 'string'},
+        't2': {
+            'c1': 'string',
+            'relationships': {'t6': 'many-to-many'}
+        },
         't3': {},
         't4': {'relationships': ['t1']},
         't5': {'relationships': {'t1': {'many-to-many': True}}},
@@ -105,6 +108,18 @@ def t1_t2_query():
         'c4': 'test1',
         't2': {
             'c1': 'test12'
+        }
+    }
+
+@pytest.fixture
+def t1_t2_query_select():
+    return {
+        'c4': 'test1',
+        't2': {
+            'c1': 'test12'
+        },
+        '_select': {
+            't1': ['c3','c9']
         }
     }
 

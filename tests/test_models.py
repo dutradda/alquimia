@@ -55,6 +55,7 @@ class TestAlquimiaModels(object):
 
     def _check_tables(self, tables, tables_exp):
         for i in range(len(tables)):
+            print tables[i].c, tables_exp[i].c
             for col_name, col in tables[i].columns.items():
                 col_exp = tables_exp[i].columns[col_name]
                 self._check_column(col, col_exp)
@@ -73,9 +74,14 @@ class TestAlquimiaModels(object):
             self._check_tables([rel1.secondary], [rel2.secondary])
 
     def _check_models(self, models):
-        tables = models.metadata.sorted_tables
-        tables_exp = models_expected.metadata.sorted_tables
-        assert len(tables) == len(tables_exp)
+        tables_dict = models.metadata.tables
+        tables_exp_dict = models_expected.metadata.tables
+        assert len(tables_dict) == len(tables_exp_dict)
+        tables = []
+        tables_exp = []
+        for k in tables_dict.keys():
+            tables.append(tables_dict[k])
+            tables_exp.append(tables_exp_dict[k])
         self._check_tables(tables, tables_exp)
 
         for model_name, model in models.iteritems():
@@ -126,11 +132,17 @@ class TestAlquimiaModel(object):
         assert type(obj['t2']) == models['t2']
         assert obj['t2']['c1'] == t1_t2_obj['t2']['c1']
 
+    def test_model_eq(self, models, t1_t2_obj):
+        models['t1'].insert(t1_t2_obj)
+        obj = models['t2'].query({'c1': 'test12'})[0]
+        exp = {'t6': [], 'c1': 'test12', 'id': obj['id']}#"{'t6': [], 'c1': 'test12', 'id': 1L}"
+        assert obj == exp
+
     def test_model_repr(self, models, t1_t2_obj):
-        obj = models['t1'].insert(t1_t2_obj)
-        t1 = dict(obj[0])
-        t1['t2'] = dict(t1['t2'])
-        assert repr(t1) == repr(obj[0])
+        models['t1'].insert(t1_t2_obj)
+        obj = models['t2'].query({'c1': 'test12'})[0]
+        exp = "{'t6': [], 'c1': 'test12', 'id': %dL}" % obj['id']
+        assert repr(obj) == exp
 
     def test_iterator(self, models, t1_t2_obj):
         obj = models['t1'](**t1_t2_obj)
@@ -201,7 +213,6 @@ class TestAlquimiaModelMeta(object):
         model = models['t1']
         obj = dict(model.insert(t1_t2_obj)[0]['t1'])
         obj['test'] = 'test'
-        print obj
         with pytest.raises(TypeError) as e:
             model.update(obj)
     
