@@ -18,6 +18,7 @@
 
 import jsonschema
 import json
+import logging
 from abc import ABCMeta
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,10 +30,38 @@ from alquimia.model import AlquimiaModel, AlquimiaModelMeta
 from alquimia import SCHEMA, DATA_TYPES
 
 
+class OneToOneManyToManyError(Exception):
+    def __init__(self, model_name, rel_name, logger=logging):
+        message = '%s.%s is a one-to-one relationship but ' \
+                         'was mapped as many-to-many!' % (model_name, rel_name)
+        log(logger, 'critical', message)
+        Exception.__init__(self, message)
+
+
+class AmbiguousRelationshipsError(Exception):
+    def __init__(self, model_name, rel_name, logger=logging):
+        message = "%s.%s and %s.%s relationships is ambiguous!" \
+                                 % (model_name, rel_name, rel_name, model_name)
+        log(logger, 'critical', message)
+        Exception.__init__(self, message)
+
+
+def log(logger, level, message):
+    levels = {
+        'info': logger.info,
+        'warning': logger.warning,
+        'error': logger.error,
+        'critical': logger.critical,
+        'debug': logger.debug
+    }
+    levels[level]('Alquimia:%s' % message)
+
+
 class ModelsAtrrsReflect(dict):
     __metaclass__ = ABCMeta
 
-    def __init__(self, metadata, *args):
+    def __init__(self, metadata, logger=logging, *args):
+        self._logger = logger
         self._metadata = metadata
         self._rels = {}
         self._build(*args)
@@ -41,58 +70,43 @@ class ModelsAtrrsReflect(dict):
     def metadata(self):
         return self._metadata
 
-    def _build_rel_args(self, rel_name, cascade='all'):
-        args = {}
-        args['args'] = [rel_name]
-        args['cascade'] = cascade
-        return args
+    def _build_rel_instance(self, rel_name, table_name, update_kargs={}):
+        kwargs = {'cascade': 'all'}
+        kwargs.update(update_kargs)
+        self[table_name][rel_name] = relationship(rel_name, **kwargs)
 
-    def _build_rel_instance(self, args, rel_name, table_name):
-        self[table_name][rel_name] = relationship(*args.pop('args'), **args)
-
-    def _raises_one_to_one_error(self, model_name, rel_name):
-        raise TypeError('%s.%s is a one-to-one relationship but ' \
-                                  'was mapped as many-to-many!' % \
-                                            (model_name, rel_name))
+    def _add_rel(self, rel_type, rel_name, table_name, args={}):
+        self[table_name][rel_type].append(rel_name)
+        self[table_name]['relationships'].append(rel_name)
+        self._build_rel_instance(rel_name, table_name, args)
 
     def _build_many_to_many_rel(self, rel_name, table_name, mtm_table):
         if rel_name == table_name:
-            self._raises_one_to_one_error(table_name, rel_name)
-        self[table_name]['mtm'].append(rel_name)
-        self[rel_name]['mtm'].append(table_name)
-        self[table_name]['relationships'].append(rel_name)
-        self[rel_name]['relationships'].append(table_name)
-        args = self._build_rel_args(rel_name)
-        args['secondary'] = mtm_table
-        args_br = self._build_rel_args(table_name)
-        args_br['secondary'] = mtm_table
-        self._build_rel_instance(args, rel_name, table_name)
-        self._build_rel_instance(args_br, table_name, rel_name) # backref
+            raise OneToOneManyToManyError(table_name, rel_name)
+        args = {'secondary': mtm_table}
+        self._add_rel('mtm', rel_name, table_name, args)
+        self._add_rel('mtm', table_name, rel_name, args)
 
     def _build_many_to_one_rel(self, rel_name, table_name):
-        self[table_name]['mto'].append(rel_name)
-        self[rel_name]['otm'].append(table_name)
-        self[table_name]['relationships'].append(rel_name)
-        self[rel_name]['relationships'].append(table_name)
-        args = self._build_rel_args(rel_name)
-        args_br = self._build_rel_args(table_name, 'all,delete-orphan')
-        self._build_rel_instance(args, rel_name, table_name)
-        self._build_rel_instance(args_br, table_name, rel_name)
-    
-    def _build_one_to_one_rel(self, rel_name, table_name, id_column):
-        self[table_name]['oto'].append(rel_name)
-        self[table_name]['relationships'].append(rel_name)
-        args = self._build_rel_args(rel_name)
-        args['uselist'] = False
-        args['remote_side'] = [id_column]
-        self._build_rel_instance(args, rel_name, table_name)
+        self._add_rel('mto', rel_name, table_name)
+        args = {'cascade': 'all,delete-orphan'}
+        self._add_rel('otm', table_name, rel_name, args)
+        
+    def _build_one_to_one_rel(self, rel_name, table_name, id_column=None):
+        args = {'uselist': False, 'single_parent': True,
+                'cascade': 'all,delete-orphan'}
+        if id_column is not None:
+            args['remote_side'] = [id_column]
+        self._add_rel('oto', rel_name, table_name, args)
+        if not rel_name == table_name:
+            self._add_rel('oto', table_name, rel_name, args)
 
     def _build_relationships(self, table):
         for fk in table.foreign_keys:
             rel_name = fk.column.table.name
-            if rel_name == table.name:
-                self._build_one_to_one_rel(rel_name, table.name,
-                                                                 table.c['id'])
+            id_column = table.c['id'] if rel_name == table.name else None
+            if id_column is not None or fk.parent.unique:
+                self._build_one_to_one_rel(rel_name, table.name, id_column)
             else:
                 self._build_many_to_one_rel(rel_name, table.name)
         mtm_tables = list(self._mtm_tables.values())
@@ -147,10 +161,10 @@ class ModelsAtrrsReflect(dict):
 
 
 class ModelsAttributes(ModelsAtrrsReflect):
-    def __init__(self, dict_, metadata, data_types=DATA_TYPES):
+    def __init__(self, dict_, metadata, data_types=DATA_TYPES, logger=logging):
         jsonschema.validate(dict_, SCHEMA)
         self._data_types = data_types
-        ModelsAtrrsReflect.__init__(self, metadata, *[dict_])
+        ModelsAtrrsReflect.__init__(self, metadata, logger, *[dict_])
 
     def _build_columns(self, model_name, model):
         new_model = {}
@@ -178,6 +192,8 @@ class ModelsAttributes(ModelsAtrrsReflect):
     def _build_relationships_dict(self, rels):
         new_rels = {}
         if not isinstance(rels, dict):
+            if isinstance(rels, str):
+                rels = [rels]
             for rel in rels:
                 self._build_rel_attr_dict(new_rels, rel)
         else:
@@ -185,7 +201,7 @@ class ModelsAttributes(ModelsAtrrsReflect):
                 self._build_rel_attr_dict(new_rels, {k: v})
         return new_rels
 
-    def _build_relationship_column(self, rel_name, model_name, primary_key):
+    def _build_relationship_column(self, rel_name, model_name, primary_key, oto):
         foreign_key = {
             'args': [rel_name+'.id'],
             'onupdate': 'CASCADE',
@@ -195,29 +211,29 @@ class ModelsAttributes(ModelsAtrrsReflect):
         column = {'args': [rel_col_name, 'integer', foreign_key],
                   'autoincrement': False}
         if primary_key:
-            column['primary_key'] = primary_key
+            column['primary_key'] = True
+        if oto:
+            column['unique'] = True
         self._build_column_instance(column, rel_col_name, model_name)
 
-    def _build_relationships(self, model_name, rels_model):
-        rels_dict = self._build_relationships_dict(rels_model)
+    def _build_relationships(self, model_name, rels_dict):
         rels = {}
         for rel_name, rel in rels_dict.iteritems():
-            mtm_table_name = rel.pop('many-to-many', None)
-            if mtm_table_name is not None:
-                if not self[model_name].has_key(rel_name):
-                    mtm_table_name = '%s_%s_association' % \
-                                                         (model_name, rel_name)
-                    self._build_many_to_many_table(model_name, rel_name,
-                                                                mtm_table_name)
-                    self._build_many_to_many_rel(rel_name,
-                                                    model_name, mtm_table_name)
+            if rel.pop('many-to-many', False):
+                mtm_table_name = '%s_%s_association' % \
+                                                     (model_name, rel_name)
+                self._build_many_to_many_table(model_name, rel_name,
+                                                            mtm_table_name)
+                self._build_many_to_many_rel(rel_name,
+                                                model_name, mtm_table_name)
             else:
-                primary_key = rel.pop('primary_key', False)
+                is_oto = rel.pop('one-to-one', False) or rel_name == model_name
                 self._build_relationship_column(rel_name, model_name,
-                                                                   primary_key)
-                if rel_name == model_name:
-                    self._build_one_to_one_rel(rel_name, model_name,
-                                                        self[model_name]['id'])
+                                         rel.pop('primary_key', False), is_oto)
+                if is_oto:
+                    id_column = self[model_name]['id'] \
+                                            if rel_name == model_name else None
+                    self._build_one_to_one_rel(rel_name, model_name, id_column)
                 else:
                     self._build_many_to_one_rel(rel_name, model_name)
         return rels
@@ -238,20 +254,43 @@ class ModelsAttributes(ModelsAtrrsReflect):
            primary_key=True, autoincrement=False)
         Table(table_name, self._metadata, col1, col2)
 
+    def _check_rels(self, models_rels):
+        new_mr = {m: r.copy() for m, r in models_rels.iteritems()}
+        for mdl_name, rels in models_rels.iteritems():
+            for rel_name, rel in rels.iteritems():
+                if mdl_name in new_mr[rel_name] and mdl_name != rel_name:
+                    rel2 = models_rels[rel_name][mdl_name]
+                    rel_mtm = rel.get('many-to-many', False)
+                    rel2_mtm = rel2.get('many-to-many', False)
+                    rel_oto = rel.get('one-to-one', False)
+                    rel2_oto = rel2.get('one-to-one', False)
+                    if (not rel_mtm or not rel2_mtm) and \
+                                                (not rel_oto or not rel2_oto):
+                        raise AmbiguousRelationshipsError(mdl_name, rel_name)
+                    message = 'Removed relationship %s.%s duplicated from '\
+                             '%s.%s' % (mdl_name, rel_name, rel_name, mdl_name)
+                    log(self._logger, 'warning', message)
+                    new_mr[mdl_name].pop(rel_name)
+        models_rels.clear()
+        models_rels.update(new_mr)
+
     def _build(self, dict_):
-        for model_name in dict_.keys():
+        models_rels = {}
+        for model_name, model in dict_.iteritems():
+            rels = model.get('relationships', {})
+            models_rels[model_name] = self._build_relationships_dict(rels)
             self._init_attrs(model_name)
+        self._check_rels(models_rels)
 
         for model_name, model in dict_.iteritems():
             self._build_columns(model_name, model)
-            rels = model.get('relationships', {})
-            self._build_relationships(model_name, rels)
+            self._build_relationships(model_name, models_rels[model_name])
             self[model_name]['__tablename__'] = model_name
 
 
 class AlquimiaModels(dict):
     def __init__(self, db_url, dict_=None, data_types=DATA_TYPES,
-                                                    engine=None, create=False):
+                                    engine=None, create=False, logger=logging):
         if not engine:
             engine = create_engine(db_url)
         base_model = declarative_base(engine, metaclass=AlquimiaModelMeta,
@@ -260,9 +299,9 @@ class AlquimiaModels(dict):
         self._session = self._session_class()
         self._metadata = base_model.metadata
         if dict_ is not None:
-            attrs = ModelsAttributes(dict_, self._metadata, data_types)
+            attrs = ModelsAttributes(dict_, self._metadata, data_types, logger)
         else:
-            attrs = ModelsAtrrsReflect(self._metadata)
+            attrs = ModelsAtrrsReflect(self._metadata, logger)
         self._build(base_model, attrs)
         if create:
             self._metadata.create_all()

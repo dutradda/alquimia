@@ -42,16 +42,27 @@ def user_models():
             'c1': 'string',
             'relationships': {'t6': 'many-to-many'}
         },
-        't3': {},
-        't4': {'relationships': ['t1']},
+        't3': {'relationships': {'t4': 'one-to-one'}},
+        't4': {'relationships': ['t1', {'t3': 'one-to-one'}]},
         't5': {'relationships': {'t1': {'many-to-many': True}}},
         't6': {'relationships': [{'t1': 'many-to-many'}, {'t2': 'many-to-many'}]},
-        't7': {}
+        't7': {'relationships': {'t1': 'one-to-one'}},
+        't8': {'relationships': 't7'}
     }
 
 @pytest.fixture
 def user_models_oto_error():
     return {'t': {'relationships': {'t': 'many-to-many'}}}
+
+@pytest.fixture
+def user_models_amb_rels_error():
+    return {'t': {'relationships': {'t2': 'many-to-many'}},
+            't2': {'relationships':{'t': 'one-to-one'}}}
+
+@pytest.fixture
+def user_models_amb_rels_mto_error():
+    return {'t': {'relationships': ['t2']},
+            't2': {'relationships': ['t']}}
 
 @pytest.fixture
 def user_models_no_type_error():
@@ -81,9 +92,7 @@ def models_create(request, user_models, db_uri):
     metadata.reflect()
     metadata.drop_all()
     models_ = AlquimiaModels(db_uri, user_models, create=True)
-    def fin():
-        models_.metadata.drop_all()
-    request.addfinalizer(fin)
+    request.addfinalizer(models_.metadata.drop_all)
     return models_
 
 @pytest.fixture

@@ -41,7 +41,7 @@ def build_models_attributes():
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id',
                                                              onupdate='CASCADE',
                                                              ondelete='CASCADE'),
-                                                                         name='t1_id',
+                                                                         name='t1_id', unique=True,
                                                                          autoincrement=False),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t2.id',
                                                              onupdate='CASCADE',
@@ -49,7 +49,7 @@ def build_models_attributes():
                                                                          name='t2_id',
                                                                          autoincrement=False,
                                                                          primary_key=True)),
-            't1': sqlalchemy.orm.relationship('t1', cascade='all', remote_side=[t1_id]),
+            't1': sqlalchemy.orm.relationship('t1', cascade='all,delete-orphan', remote_side=[t1_id], single_parent=True),
             't2': sqlalchemy.orm.relationship('t2', cascade='all',
                 backref=sqlalchemy.orm.backref('t1', cascade='all,delete-orphan')),
             't3': sqlalchemy.orm.relationship('t3', cascade='all',
@@ -60,13 +60,20 @@ def build_models_attributes():
             '__table__': sqlalchemy.Table('t2', metadata,
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
                 sqlalchemy.Column(sqlalchemy.String, name='c1')),
-            't6': sqlalchemy.orm.relationship('t6', secondary='t6_t2_association',
+            't6': sqlalchemy.orm.relationship('t6', secondary='t2_t6_association',
                                                              cascade='all',
                                                              backref=sqlalchemy.orm.backref('t2', cascade='all'))
         },
         't3': {
             '__table__': sqlalchemy.Table('t3', metadata,
-                sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'))
+                sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
+                sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t4.id',
+                                                                 onupdate='CASCADE',
+                                                                 ondelete='CASCADE'),
+                                                                             name='t4_id', unique=True,
+                                                                         autoincrement=False)),
+            't4': sqlalchemy.orm.relationship('t4', cascade='all,delete-orphan', single_parent=True,
+                        backref=sqlalchemy.orm.backref('t3', cascade='all,delete-orphan', single_parent=True))
         },
         't4': {
             '__table__': sqlalchemy.Table('t4', metadata,
@@ -95,11 +102,29 @@ def build_models_attributes():
         },
         't7': {
             '__table__': sqlalchemy.Table('t7', metadata,
-                sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'))
+                sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
+                sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id',
+                                                                 onupdate='CASCADE',
+                                                                 ondelete='CASCADE'),
+                                                                             name='t1_id', unique=True,
+                                                                         autoincrement=False)),
+            't1': sqlalchemy.orm.relationship('t1', cascade='all,delete-orphan', single_parent=True,
+                        backref=sqlalchemy.orm.backref('t7', cascade='all,delete-orphan', single_parent=True))
+        },
+        't8': {
+            '__table__': sqlalchemy.Table('t8', metadata,
+                sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
+                sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t7.id',
+                                                                 onupdate='CASCADE',
+                                                                 ondelete='CASCADE'),
+                                                                             name='t7_id',
+                                                                         autoincrement=False)),
+            't7': sqlalchemy.orm.relationship('t7', cascade='all',
+                        backref=sqlalchemy.orm.backref('t8', cascade='all,delete-orphan'))
         }
     })
 
-    sqlalchemy.Table('t6_t2_association', metadata,
+    sqlalchemy.Table('t2_t6_association', metadata,
     sqlalchemy.Column('t6_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t6.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False),
     sqlalchemy.Column('t2_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('t2.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, autoincrement=False))
 
@@ -139,4 +164,61 @@ def build_models():
 
 models_expected = build_models()
 
-attributes_expected = build_models_attributes()
+rels_expected = {
+    't1': {
+        'relationships': ['t1', 't2', 't3', 't4', 't5', 't6', 't7'],
+        'oto': ['t1', 't7'],
+        'mto': ['t2'],
+        'otm': ['t4'],
+        'mtm': ['t3', 't5', 't6']
+    },
+    't2': {
+        'relationships': ['t1', 't6'],
+        'oto': [],
+        'mto': [],
+        'otm': ['t1'],
+        'mtm': ['t6']
+    },
+    't3': {
+        'relationships': ['t1', 't4'],
+        'oto': ['t4'],
+        'mto': [],
+        'otm': [],
+        'mtm': ['t1']
+    },
+    't4': {
+        'relationships': ['t1', 't3'],
+        'oto': ['t3'],
+        'mto': ['t1'],
+        'otm': [],
+        'mtm': []
+    },
+    't5': {
+        'relationships': ['t1'],
+        'oto': [],
+        'mto': [],
+        'otm': [],
+        'mtm': ['t1']
+    },
+    't6': {
+        'relationships': ['t1', 't2'],
+        'oto': [],
+        'mto': [],
+        'otm': [],
+        'mtm': ['t1', 't2']
+    },
+    't7': {
+        'relationships': ['t1', 't8'],
+        'oto': ['t1'],
+        'mto': [],
+        'otm': ['t8'],
+        'mtm': []
+    },
+    't8': {
+        'relationships': ['t7'],
+        'oto': [],
+        'mto': ['t7'],
+        'otm': [],
+        'mtm': []
+    }
+}

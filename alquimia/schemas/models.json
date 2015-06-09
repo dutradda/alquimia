@@ -27,6 +27,7 @@
             "properties": {
                 "relationships": {
                     "oneOf": [
+                        {"type": "string"},
                         {
                             "type": "array",
                             "items": {
@@ -55,7 +56,7 @@
                     "oneOf": [
                         {
                             "type": "string",
-                            "pattern": "many-to-many|primary_key"
+                            "pattern": "^many-to-many|one-to-one|primary_key$"
                         },
                         {
                             "type": "object",
