@@ -19,7 +19,6 @@
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
-import weakref
 
 
 class AlquimiaModelMeta(DeclarativeMeta):
@@ -29,6 +28,26 @@ class AlquimiaModelMeta(DeclarativeMeta):
                                        if isinstance(v, InstrumentedAttribute)}
         cls.__attrs__ = cls.__attributes__ = attrs
         cls._current_pos = 0
+    
+    def __getitem__(cls, attr_name):
+        try:
+            return cls.__attributes__[attr_name]
+        except KeyError, e:
+            raise KeyError(e.message)
+        
+    def __iter__(cls):
+        return cls
+
+    def __contains__(cls, item):
+        return item in cls.__attrs__
+
+    def next(cls):
+        cls._current_pos += 1
+        if cls._current_pos >= len(cls.keys()):
+            cls._current_pos = 0
+            raise StopIteration
+        else:
+            return cls.keys()[cls._current_pos - 1]
 
     @property
     def keys(cls):
@@ -49,23 +68,6 @@ class AlquimiaModelMeta(DeclarativeMeta):
     @property
     def iteritems(cls):
         return cls.__attrs__.iteritems
-    
-    def __getitem__(cls, attr_name):
-        try:
-            return cls.__attributes__[attr_name]
-        except KeyError, e:
-            raise KeyError(e.message)
-        
-    def __iter__(cls):
-        return cls
-
-    def next(cls):
-        cls._current_pos += 1
-        if cls._current_pos >= len(cls.keys()):
-            cls._current_pos = 0
-            raise StopIteration
-        else:
-            return cls.keys()[cls._current_pos - 1]
 
     def _build_objs(cls, obj):
         if not isinstance(obj, list):
@@ -77,18 +79,28 @@ class AlquimiaModelMeta(DeclarativeMeta):
             objs.append(each)
         return objs
 
-    def insert(cls, objs):
-        session = cls.session
-        objs = cls._build_objs(objs)
-        session.commit()
-        return objs
-
     def _update_rec(cls, obj_dict, obj):
         for prop_name, prop in obj_dict.iteritems():
             if isinstance(prop, dict):
                 cls._update_rec(prop, obj[prop_name])
             else:
                 obj[prop_name] = prop
+
+    def _build_query_filter_rec(cls, query_dict, obj, filters):
+        for prop_name, prop in query_dict.iteritems():
+            if isinstance(prop, dict):
+                cls._build_query_filter_rec(prop, obj[prop_name], filters)
+            else:
+                if hasattr(obj, 'model'):
+                    obj = obj.model
+                filters.append(obj[prop_name] == prop)
+        return filters
+
+    def insert(cls, objs):
+        session = cls.session
+        objs = cls._build_objs(objs)
+        session.commit()
+        return objs
 
     def update(cls, objs):
         session = cls.session
@@ -121,16 +133,6 @@ class AlquimiaModelMeta(DeclarativeMeta):
             session.query(cls).filter(cls.id == id_).delete()
         session.commit()
 
-    def _build_query_filter_rec(cls, query_dict, obj, filters):
-        for prop_name, prop in query_dict.iteritems():
-            if isinstance(prop, dict):
-                cls._build_query_filter_rec(prop, obj[prop_name], filters)
-            else:
-                if hasattr(obj, 'model'):
-                    obj = obj.model
-                filters.append(obj[prop_name] == prop)
-        return filters
-
     def query(cls, query_dict):
         filters = cls._build_query_filter_rec(query_dict, cls, [])
         session = cls.session
@@ -139,15 +141,9 @@ class AlquimiaModelMeta(DeclarativeMeta):
 
 
 class AlquimiaModel(object):
-    def _check_attr(self, attr_name):
-        if not type(self).has_key(attr_name):
-            raise TypeError("'%s' is not a valid %s attribute!" % (attr_name,
-                                                                   type(self)))
-
     def __new__(cls, **kwargs):
         inst = object.__new__(cls)
-        inst.show_otm = False
-        inst._session = cls.session
+        inst.depth = 0
         return inst
 
     def __init__(self, **kwargs):
@@ -156,19 +152,8 @@ class AlquimiaModel(object):
                 self[prop_name] = type(self)[prop_name].model(**prop)
             else:
                 self[prop_name] = prop
-        self._session.add(self)
+        self.session.add(self)
         self._current_pos = 0
-
-    def delete_(self):
-        self._session.delete(self)
-        self._session.commit()
-
-    def save(self):
-        self._session.commit()
-
-    @property
-    def session(self):
-        return self._session
 
     def __setitem__(self, item, value):
         self._check_attr(item)
@@ -178,18 +163,8 @@ class AlquimiaModel(object):
         self._check_attr(item)
         return getattr(self, item)
 
-    def todict(self, depth=0):
-        if not self.show_otm:
-            attrs = set(self.keys()) - set(self.otm)
-            return {attr:self[attr] for attr in attrs}
-        self.show_otm = False
-        return dict(self)
-
     def __repr__(self):
-        return self.todict().__repr__()
-
-    def __eq__(self, other):
-        return self.todict() == dict(other)
+        return repr(self.todict())
 
     def __iter__(self):
         return self
@@ -202,9 +177,55 @@ class AlquimiaModel(object):
         else:
             return self.keys()[self._current_pos - 1]
 
+    def _check_attr(self, attr_name):
+        if not attr_name in type(self):
+            raise TypeError("'%s' is not a valid %s attribute!" %
+                                              (attr_name, type(self).__name__))
+            
+    def _todict_part(self, obj, depth, rec_stack):
+        if isinstance(obj, AlquimiaModel):
+            if depth != 0:
+                depth = depth - 1
+                if not obj in rec_stack:
+                    obj = self.todict(depth, obj, rec_stack)
+                else:
+                    obj = '<loaded object at id=%d>' % obj['id']
+            else:
+                obj = '<1 object>'
+        return obj
+
+    def todict(self, depth=0, obj=None, rec_stack=[]):
+        obj = self if obj is None else obj
+        dict_ = {}
+        rec_stack.append(obj)
+        for prop_name, prop in obj.items():
+            if isinstance(prop, list):
+                if depth != 0 and len(prop):
+                    propl = []
+                    for each in prop:
+                        each = self._todict_part(each, depth, rec_stack)
+                        propl.append(each)
+                    prop = propl
+                else:
+                    prop = '<%d object(s)>' % len(prop)
+            else:
+                prop = self._todict_part(prop, depth, rec_stack)
+            dict_[prop_name] = prop    
+        return dict_
+
     def has_key(self, key):
         self._check_attr(key)
         return hasattr(self, key)
 
     def keys(self):
         return type(self).keys()
+
+    def items(self):
+        return [(k, self[k]) for k in self.keys()]
+
+    def remove(self):
+        self.session.delete(self)
+        self.session.commit()
+
+    def save(self):
+        self.session.commit()

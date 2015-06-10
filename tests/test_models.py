@@ -19,7 +19,7 @@
 import pytest
 import sqlalchemy
 import json
-from tests.models_expected import models_expected, rels_expected
+from tests.models_expected import models_expected, rels_expected, todict_expected
 from alquimia import AlquimiaModels
 from alquimia.models import OneToOneManyToManyError, AmbiguousRelationshipsError
 from jsonschema import ValidationError
@@ -161,23 +161,32 @@ class TestAlquimiaModel(object):
         assert obj['c1'] == t1_t2_obj['c1']
         assert obj['c2'] == t1_t2_obj['c2']
         assert obj['c4'] == t1_t2_obj['c4']
-        obj.delete_()
+        obj.remove()
 
     def test_init_rec(self, models, t1_t2_obj):
         obj = models['t1'](**t1_t2_obj)
         assert type(obj['t2']) == models['t2']
         assert obj['t2']['c1'] == t1_t2_obj['t2']['c1']
 
-    def test_model_eq(self, models, t1_t2_obj):
+    def test_model_todict(self, models, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         obj = models['t2'].query({'c1': 'test12'})[0]
-        exp = {'t6': [], 'c1': 'test12', 'id': obj['id']}#"{'t6': [], 'c1': 'test12', 'id': 1L}"
-        assert obj == exp
+        todict_expected['id'] = obj['id']
+        todict_expected['t1'][0]['id'] = obj['t1'][0]['id']
+        todict_expected['t1'][0]['t2'] = todict_expected['t1'][0]['t2'] % obj['id']
+        todict_expected['t1'][0]['t1_id'] = obj['t1'][0]['t1_id']
+        todict_expected['t1'][0]['t2_id'] = obj['t1'][0]['t2_id']
+        todict_expected['t1'][0]['t1']['id'] = obj['t1'][0]['t1']['id']
+        todict_expected['t1'][0]['t1']['t2_id'] = obj['t1'][0]['t1']['t2_id']
+        todict_expected['t1'][0]['t1']['t2']['id'] = obj['t1'][0]['t1']['t2']['id']
+        todict_expected['t1'][0]['t1']['t2']['t1'][0] = todict_expected['t1'][0]['t1']['t2']['t1'][0] % obj['t1'][0]['t1']['id']
+        assert obj.todict(-1) == todict_expected
 
     def test_model_repr(self, models, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         obj = models['t2'].query({'c1': 'test12'})[0]
-        exp = "{'t6': [], 'c1': 'test12', 'id': %dL}" % obj['id']
+        exp = "{'t6': '<0 object(s)>', 'c1': 'test12', " \
+              "'id': %dL, 't1': '<1 object(s)>'}" % obj['id']
         assert repr(obj) == exp
 
     def test_iterator(self, models, t1_t2_obj):
@@ -185,7 +194,7 @@ class TestAlquimiaModel(object):
         obj.save()
         for attr in obj:
             assert obj.has_key(attr)
-        obj.delete_()
+        obj.remove()
 
 
 class TestAlquimiaModelMeta(object):
