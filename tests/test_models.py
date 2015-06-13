@@ -133,6 +133,7 @@ class TestAlquimiaModels(object):
         t1 = models['t1'].insert(t1_t2_obj)
         session = t1._session._session
         models.clean()
+        t1['t2']
         assert t1._session._session != session
 
     def test_models_oto_mtm_error(self, user_models_oto_error, db_uri):
