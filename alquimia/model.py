@@ -20,11 +20,6 @@ from sqlalchemy.orm.exc import DetachedInstanceError
 
 
 class AlquimiaModel(object):
-    def __new__(cls, **kwargs):
-        inst = object.__new__(cls)
-        inst.depth = 0
-        return inst
-
     def __init__(self, **kwargs):
         for prop_name, prop in kwargs.iteritems():
             if isinstance(prop, dict):

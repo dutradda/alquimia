@@ -29,39 +29,14 @@ from alquimia.models_attrs_reflect import ModelsAtrrsReflect
 from alquimia import DATA_TYPES
 
 
-class AlquimiaSession(object):
-    def __init__(self, engine):
-        self._session_class = sessionmaker(engine)
-        self._session = self._session_class()
-
-    def delete(self, *args, **kwargs):
-        return self._session.delete(*args, **kwargs)
-
-    def query(self, *args, **kwargs):
-        return self._session.query(*args, **kwargs)
-
-    def commit(self, *args, **kwargs):
-        return self._session.commit(*args, **kwargs)
-
-    def rollback(self, *args, **kwargs):
-        return self._session.rollback(*args, **kwargs)
-
-    def add(self, *args, **kwargs):
-        return self._session.add(*args, **kwargs)
-
-    def clean(self):
-        self._session.close()
-        self._session = self._session_class()
-
-
 class AlquimiaModels(dict):
     def __init__(self, db_url, dict_=None, data_types=DATA_TYPES,
-                                    engine=None, create=False, logger=logging):
-        if not engine:
-            engine = create_engine(db_url)
+                                                 create=False, logger=logging):
+        engine = create_engine(db_url)
         base_model = declarative_base(engine, metaclass=AlquimiaModelMeta,
                          cls=AlquimiaModel, constructor=AlquimiaModel.__init__)
-        self._session = AlquimiaSession(engine)
+        self._session_class = sessionmaker(engine)
+        self._session = self._session_class()
         self.metadata = base_model.metadata
         if dict_ is not None:
             attrs = ModelsAttributes(dict_, self.metadata, data_types, logger)
@@ -83,10 +58,10 @@ class AlquimiaModels(dict):
             for attr_name, attr in model.iteritems():
                 if isinstance(attr.prop, RelationshipProperty):
                     setattr(attr, 'model', models[attr_name])
-                elif isinstance(attr.prop, ColumnProperty):
+                else:
                     model.columns.append(attr_name)
 
         self.update(models)
 
     def clean(self):
-        self._session.clean()
+        self._session.expunge_all()

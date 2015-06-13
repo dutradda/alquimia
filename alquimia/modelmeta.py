@@ -136,3 +136,6 @@ class AlquimiaModelMeta(DeclarativeMeta):
         session = cls._session
         result = session.query(cls).filter(*filters).all()
         return result
+
+    def all(cls):
+        return cls._session.query(cls).all()

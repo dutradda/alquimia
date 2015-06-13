@@ -276,3 +276,6 @@ todict_expected = {
         'c4': 'test1'
     }]
 }
+
+repr_model_expected = \
+"{'t1_id': %dL, 't2_id': %dL, 't6': '<0 object(s)>', 't7': None, 't4': '<0 object(s)>', 't5': '<0 object(s)>', 't2': '<1 object>', 't3': '<0 object(s)>', 't1': '<1 object>', 'c9': 'test', 'c8': None, 'id': %dL, 'c3': None, 'c2': 1L, 'c1': True, 'c10': None, 'c7': None, 'c6': None, 'c5': None, 'c4': 'test1'}"

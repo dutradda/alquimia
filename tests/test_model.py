@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from tests.models_expected import todict_expected
+from tests.models_expected import todict_expected, repr_model_expected
 
 
 class TestAlquimiaModel(object):
@@ -48,10 +48,8 @@ class TestAlquimiaModel(object):
         assert obj.todict(-1) == todict_expected
 
     def test_model_repr(self, models, t1_t2_obj):
-        models['t1'].insert(t1_t2_obj)
-        obj = models['t2'].query({'c1': 'test12'})[0]
-        exp = "{'t6': '<0 object(s)>', 'c1': 'test12', " \
-              "'id': %dL, 't1': '<1 object(s)>'}" % obj['id']
+        obj = models['t1'].insert(t1_t2_obj)
+        exp = repr_model_expected % (obj['t1_id'], obj['t2_id'], obj['id'])
         assert repr(obj) == exp
 
     def test_iterator(self, models, t1_t2_obj):

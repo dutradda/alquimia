@@ -130,9 +130,20 @@ class TestAlquimiaModelMeta(object):
         assert query['c4'] == t1_t2_query['c4']
         assert query['t2']['c1'] == t1_t2_query['t2']['c1']
 
-    def test_iterator(self, models, t1_t2_obj):
+    def test_modelmeta_iterator(self, models, t1_t2_obj):
         for attr in models['t1']:
             assert attr
         for k, v in models['t1'].items():
             assert models['t1'][k]
         models['t1'].values()
+
+    def test_modelmeta_all(self, models, t1_t2_obj):
+        o1 = models['t1'].insert(t1_t2_obj)
+        o2 = models['t1'].insert(t1_t2_obj)
+        o3 = models['t1'].insert(t1_t2_obj)
+        all_ = models['t1'].all()
+        assert len(all_) == 6
+        all_exp = [o1, o2, o3, o1['t1'], o2['t1'], o3['t1']]
+        all_.sort()
+        all_exp.sort()
+        assert all_ == all_exp
