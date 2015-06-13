@@ -22,7 +22,7 @@ from alquimia.models import AlquimiaModels
 from sqlalchemy.testing.engines import mock_engine
 from sqlalchemy import MetaData, create_engine
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def user_models():
     return {
         't1': {
@@ -76,7 +76,7 @@ def user_models_col__id_error():
 def user_models_invalid_attribute_error():
     return {'t': {'c': 'test'}}
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def db_uri():
     return os.environ.get('ALQUIMIA_TEST_DB') or 'mysql://root:root@localhost:3600/alquimia_test'
 
@@ -86,7 +86,7 @@ def models_finalizer(models_):
         s.query(model).delete()
         s.commit()
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def models_create(request, user_models, db_uri):
     metadata = MetaData(db_uri)
     metadata.reflect()
