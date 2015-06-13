@@ -1,8 +1,8 @@
 # Copyright 2015 Diogo Dutra
 
-# This file is part of Alquimia.
+# This file is part of alquimia.
 
-# Alquimia is free software: you can redistribute it and/or modify
+# alquimia is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -21,13 +21,13 @@ import sys
 from setuptools import setup
 
 if sys.version_info < (2, 7):
-    raise Exception("Alquimia requires Python 2.7 or higher.")
+    raise Exception("alquimia requires Python 2.7 or higher.")
 elif sys.version_info >= (3, 0):
-    raise Exception("Alquimia do not support Python 3")
+    raise Exception("alquimia do not support Python 3")
 
 setup(
     name='alquimia',
-    version='0.5.2',
+    version='0.5.3',
     author='Diogo Dutra',
     author_email='dutradda@gmail.com',
     description='An API to work with JSON schemas in SQLAlchemy',

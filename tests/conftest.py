@@ -1,8 +1,8 @@
 # Copyright 2015 Diogo Dutra
 
-# This file is part of Alquimia.
+# This file is part of alquimia.
 
-# Alquimia is free software: you can redistribute it and/or modify
+# alquimia is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -19,10 +19,10 @@
 import os
 import pytest
 from alquimia.models import AlquimiaModels
-from sqlalchemy.testing.engines import mock_engine
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope='class')
 def user_models():
     return {
         't1': {
@@ -76,7 +76,7 @@ def user_models_col__id_error():
 def user_models_invalid_attribute_error():
     return {'t': {'c': 'test'}}
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def db_uri():
     return os.environ.get('ALQUIMIA_TEST_DB') or 'mysql://root:root@localhost:3600/alquimia_test'
 
@@ -86,7 +86,7 @@ def models_finalizer(models_):
         s.query(model).delete()
         s.commit()
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def models_create(request, user_models, db_uri):
     metadata = MetaData(db_uri)
     metadata.reflect()

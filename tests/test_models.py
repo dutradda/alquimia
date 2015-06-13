@@ -1,8 +1,8 @@
 # Copyright 2015 Diogo Dutra
 
-# This file is part of Alquimia.
+# This file is part of alquimia.
 
-# Alquimia is free software: you can redistribute it and/or modify
+# alquimia is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -18,10 +18,10 @@
 
 import pytest
 import sqlalchemy
-import json
-from tests.models_expected import models_expected, rels_expected, todict_expected
+from tests.models_expected import models_expected, rels_expected
 from alquimia import AlquimiaModels
-from alquimia.models import OneToOneManyToManyError, AmbiguousRelationshipsError
+from alquimia.models_attrs import AmbiguousRelationshipsError
+from alquimia.models_attrs_reflect import OneToOneManyToManyError
 from jsonschema import ValidationError
 
 

@@ -16,24 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os.path
-import sqlalchemy
-import json
-
-ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-SCHEMAS_DIR = os.path.join(ROOT_DIR, 'schemas')
-
-MODELS_SCHEMA_FILE = os.path.join(SCHEMAS_DIR, 'models.json')
-
-SCHEMA = json.loads(open(MODELS_SCHEMA_FILE).read())
-
-DATA_TYPES = {
-    'integer': sqlalchemy.Integer,
-    'string': sqlalchemy.String(255),
-    'float': sqlalchemy.Float,
-    'text': sqlalchemy.Text(),
-    'boolean': sqlalchemy.Boolean
-}
-
-from alquimia.models import AlquimiaModels
+def log(logger, level, message):
+    levels = {
+        'info': logger.info,
+        'warning': logger.warning,
+        'error': logger.error,
+        'critical': logger.critical,
+        'debug': logger.debug
+    }
+    levels[level]('Alquimia:%s' % message)
