@@ -63,10 +63,6 @@ class ModelsAtrrsReflect(dict):
         self._rels = {}
         self._build(*args)
 
-    @property
-    def metadata(self):
-        return self._metadata
-
     def _build_rel_instance(self, rel_name, table_name, update_kargs={}):
         kwargs = {'cascade': 'all'}
         kwargs.update(update_kargs)
@@ -285,6 +281,31 @@ class ModelsAttributes(ModelsAtrrsReflect):
             self[model_name]['__tablename__'] = model_name
 
 
+class AlquimiaSession(object):
+    def __init__(self, engine):
+        self._session_class = sessionmaker(engine)
+        self._session = self._session_class()
+
+    def delete(self, *args, **kwargs):
+        return self._session.delete(*args, **kwargs)
+
+    def query(self, *args, **kwargs):
+        return self._session.query(*args, **kwargs)
+
+    def commit(self, *args, **kwargs):
+        return self._session.commit(*args, **kwargs)
+
+    def rollback(self, *args, **kwargs):
+        return self._session.rollback(*args, **kwargs)
+
+    def add(self, *args, **kwargs):
+        return self._session.add(*args, **kwargs)
+
+    def clean(self):
+        self._session.close()
+        self._session = self._session_class()
+
+
 class AlquimiaModels(dict):
     def __init__(self, db_url, dict_=None, data_types=DATA_TYPES,
                                     engine=None, create=False, logger=logging):
@@ -292,29 +313,20 @@ class AlquimiaModels(dict):
             engine = create_engine(db_url)
         base_model = declarative_base(engine, metaclass=AlquimiaModelMeta,
                          cls=AlquimiaModel, constructor=AlquimiaModel.__init__)
-        self._session_class = sessionmaker(engine)
-        self._session = self._session_class()
-        self._metadata = base_model.metadata
+        self._session = AlquimiaSession(engine)
+        self.metadata = base_model.metadata
         if dict_ is not None:
-            attrs = ModelsAttributes(dict_, self._metadata, data_types, logger)
+            attrs = ModelsAttributes(dict_, self.metadata, data_types, logger)
         else:
-            attrs = ModelsAtrrsReflect(self._metadata, logger)
+            attrs = ModelsAtrrsReflect(self.metadata, logger)
         self._build(base_model, attrs)
         if create:
-            self._metadata.create_all()
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    @property
-    def session(self):
-        return self._session
+            self.metadata.create_all()
 
     def _build(self, base_model, models_attrs):
         models = {}
         for model_name, attrs in models_attrs.iteritems():
-            attrs.update({'session': self.session})
+            attrs.update({'_session': self._session})
             model = type(model_name, (base_model,), attrs)
             models[model_name] = model
 
@@ -327,3 +339,6 @@ class AlquimiaModels(dict):
                     model.columns.append(attr_name)
 
         self.update(models)
+
+    def clean(self):
+        self._session.clean()

@@ -18,7 +18,7 @@
 
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, DetachedInstanceError
 
 
 class AlquimiaModelMeta(DeclarativeMeta):
@@ -97,13 +97,15 @@ class AlquimiaModelMeta(DeclarativeMeta):
         return filters
 
     def insert(cls, objs):
-        session = cls.session
-        objs = cls._build_objs(objs)
+        session = cls._session
+        objs_ = cls._build_objs(objs)
         session.commit()
-        return objs
+        if not isinstance(objs, list):
+            objs_ = objs_[0]
+        return objs_
 
     def update(cls, objs):
-        session = cls.session
+        session = cls._session
         if not isinstance(objs, list):
             objs = [objs]
         for obj in objs:
@@ -120,7 +122,7 @@ class AlquimiaModelMeta(DeclarativeMeta):
         return new_obj
 
     def delete(cls, ids):
-        session = cls.session
+        session = cls._session
         if not isinstance(ids, list):
             ids = [ids]
         for id_ in ids:
@@ -135,7 +137,7 @@ class AlquimiaModelMeta(DeclarativeMeta):
 
     def query(cls, query_dict):
         filters = cls._build_query_filter_rec(query_dict, cls, [])
-        session = cls.session
+        session = cls._session
         result = session.query(cls).filter(*filters).all()
         return result
 
@@ -152,7 +154,7 @@ class AlquimiaModel(object):
                 self[prop_name] = type(self)[prop_name].model(**prop)
             else:
                 self[prop_name] = prop
-        self.session.add(self)
+        self._session.add(self)
         self._current_pos = 0
 
     def __setitem__(self, item, value):
@@ -161,7 +163,11 @@ class AlquimiaModel(object):
 
     def __getitem__(self, item):
         self._check_attr(item)
-        return getattr(self, item)
+        try:
+            return getattr(self, item)
+        except DetachedInstanceError:
+            self._session.add(self)
+            return getattr(self, item)
 
     def __repr__(self):
         return repr(self.todict())
@@ -224,8 +230,8 @@ class AlquimiaModel(object):
         return [(k, self[k]) for k in self.keys()]
 
     def remove(self):
-        self.session.delete(self)
-        self.session.commit()
+        self._session.delete(self)
+        self._session.commit()
 
     def save(self):
-        self.session.commit()
+        self._session.commit()

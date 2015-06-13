@@ -81,7 +81,7 @@ def db_uri():
     return os.environ.get('ALQUIMIA_TEST_DB') or 'mysql://root:root@localhost:3600/alquimia_test'
 
 def models_finalizer(models_):
-    s = models_.session
+    s = models_._session
     for model in models_.values():
         s.query(model).delete()
         s.commit()
@@ -92,7 +92,7 @@ def models_create(request, user_models, db_uri):
     metadata.reflect()
     metadata.drop_all()
     models_ = AlquimiaModels(db_uri, user_models, create=True)
-    request.addfinalizer(models_.metadata.drop_all)
+    request.addfinalizer(metadata.drop_all)
     return models_
 
 @pytest.fixture

@@ -129,6 +129,12 @@ class TestAlquimiaModels(object):
         self._check_models(models_reflect)
         del self.is_reflect
 
+    def test_models_clean(self, models, t1_t2_obj):
+        t1 = models['t1'].insert(t1_t2_obj)
+        session = t1._session._session
+        models.clean()
+        assert t1._session._session != session
+
     def test_models_oto_mtm_error(self, user_models_oto_error, db_uri):
         with pytest.raises(OneToOneManyToManyError):
             AlquimiaModels(db_uri, user_models_oto_error)
@@ -201,7 +207,7 @@ class TestAlquimiaModelMeta(object):
     def test_modelmeta_insert(self, models, t1_t2_obj):
         model = models['t1']
         model.insert(t1_t2_obj)
-        s = model.session
+        s = model._session
         nobj = s.query(model).all()[1]
         assert nobj['c1'] == t1_t2_obj['c1']
         assert nobj['c2'] == t1_t2_obj['c2']
@@ -211,16 +217,29 @@ class TestAlquimiaModelMeta(object):
     def test_modelmeta_insert_invalid(self, models, invalid_obj):
         with pytest.raises(TypeError):
             models['t1'].insert(invalid_obj)
-            
+
+    def test_modelmeta_insert_list(self, models, t1_t2_obj):
+        ins = models['t1'].insert([t1_t2_obj])
+        assert isinstance(ins, list) and len(ins) == 1
+
     def test_modelmeta_delete(self, models, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         model = models['t1']
-        s = model.session
+        s = model._session
         assert len(s.query(model).all()) == 2
         obj = s.query(model).filter(model.c4 == 'test11').one()
         model.delete(obj.id)
-        s.close()
-        s = model.session
+        s = model._session
+        assert len(s.query(model).all()) == 0
+
+    def test_modelmeta_delete_list(self, models, t1_t2_obj):
+        models['t1'].insert(t1_t2_obj)
+        model = models['t1']
+        s = model._session
+        assert len(s.query(model).all()) == 2
+        obj = s.query(model).filter(model.c4 == 'test11').one()
+        model.delete([obj.id])
+        s = model._session
         assert len(s.query(model).all()) == 0
 
     def test_modelmeta_delete_invalid(self, models, invalid_obj):
@@ -234,11 +253,23 @@ class TestAlquimiaModelMeta(object):
     def test_modelmeta_update(self, models, t1_t2_obj, t1_t2_update):
         model = models['t1']
         model.insert(t1_t2_obj)
-        s = model.session
+        s = model._session
         id_ = s.query(models['t1'].id).filter(models['t1'].c4 == 'test1').one()[0]
         t1_t2_update.update({'id': id_})
         model.update(t1_t2_update)
-        s = model.session
+        s = model._session
+        obj = s.query(model).filter(model.id == id_).one()
+        assert obj['c4'] == t1_t2_update['c4']
+        assert obj['t2']['c1'] == t1_t2_update['t2']['c1']
+
+    def test_modelmeta_update_list(self, models, t1_t2_obj, t1_t2_update):
+        model = models['t1']
+        model.insert(t1_t2_obj)
+        s = model._session
+        id_ = s.query(models['t1'].id).filter(models['t1'].c4 == 'test1').one()[0]
+        t1_t2_update.update({'id': id_})
+        model.update([t1_t2_update])
+        s = model._session
         obj = s.query(model).filter(model.id == id_).one()
         assert obj['c4'] == t1_t2_update['c4']
         assert obj['t2']['c1'] == t1_t2_update['t2']['c1']
@@ -256,7 +287,7 @@ class TestAlquimiaModelMeta(object):
 
     def test_modelmeta_update_invalid_obj(self, models, t1_t2_obj):
         model = models['t1']
-        obj = dict(model.insert(t1_t2_obj)[0]['t1'])
+        obj = dict(model.insert(t1_t2_obj)['t1'])
         obj['test'] = 'test'
         with pytest.raises(TypeError) as e:
             model.update(obj)
