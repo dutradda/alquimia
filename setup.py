@@ -26,20 +26,20 @@ elif sys.version_info >= (3, 0):
     raise Exception("Alquimia do not support Python 3")
 
 setup(
-    name='Alquimia',
-    version='0.4.0',
+    name='alquimia',
+    version='0.4.1',
     author='Diogo Dutra',
     author_email='dutradda@gmail.com',
     description='An API to work with JSON schemas in SQLAlchemy',
     license='LGPLv3',
     keywords='json sqlachemy sql orm database',
     url='http://packages.python.org/alquimia',
-    packages=['alquimia', 'tests'],
+    packages=['alquimia'],
     package_data={'alquimia': ['schemas/models.json']},
     requires=['sqlalchemy', 'jsonschema'],
     classifiers=[
         'Programming Language :: Python :: 2.7',
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Database :: Front-Ends',
         'Topic :: Software Development :: Libraries :: Python Modules',
