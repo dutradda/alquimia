@@ -18,7 +18,7 @@
 
 import logging
 from sqlalchemy.orm import relationship
-from alquimia.log import log
+from alquimia.utils import log
 
 
 class OneToOneManyToManyError(Exception):

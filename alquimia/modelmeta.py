@@ -19,6 +19,7 @@
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
+from alquimia import utils
 
 
 class AlquimiaModelMeta(DeclarativeMeta):
@@ -82,16 +83,6 @@ class AlquimiaModelMeta(DeclarativeMeta):
             else:
                 obj[prop_name] = prop
 
-    def _build_query_filter_rec(cls, query_dict, obj, filters):
-        for prop_name, prop in query_dict.iteritems():
-            if isinstance(prop, dict):
-                cls._build_query_filter_rec(prop, obj[prop_name], filters)
-            else:
-                if hasattr(obj, 'model'):
-                    obj = obj.model
-                filters.append(obj[prop_name] == prop)
-        return filters
-
     def insert(cls, objs):
         session = cls._session
         objs_ = cls._build_objs(objs)
@@ -131,11 +122,6 @@ class AlquimiaModelMeta(DeclarativeMeta):
             session.query(cls).filter(cls.id == id_).delete()
         session.commit()
 
-    def query(cls, query_dict):
-        filters = cls._build_query_filter_rec(query_dict, cls, [])
-        session = cls._session
-        result = session.query(cls).filter(*filters).all()
-        return result
-
-    def all(cls):
-        return cls._session.query(cls).all()
+    def query(cls, filters={}):
+        filters = utils.parse_filters(filters, cls, [])
+        return cls._session.query(cls).filter(*filters)

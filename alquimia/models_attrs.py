@@ -21,7 +21,7 @@ import logging
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, ForeignKey, Table
 from alquimia import SCHEMA, DATA_TYPES
-from alquimia.log import log
+from alquimia.utils import log
 from alquimia.models_attrs_reflect import ModelsAtrrsReflect
 
 

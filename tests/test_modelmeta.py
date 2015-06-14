@@ -110,7 +110,7 @@ class TestAlquimiaModelMeta(object):
     
     def test_modelmeta_query(self, models, t1_t2_query, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
-        query = models['t1'].query(t1_t2_query)
+        query = models['t1'].query(t1_t2_query).all()
         assert len(query) == 1
         query = query[0]
         assert query['c4'] == t1_t2_query['c4']
@@ -118,13 +118,13 @@ class TestAlquimiaModelMeta(object):
 
     def test_modelmeta_query_invalid_obj(self, models, invalid_obj):
         with pytest.raises(KeyError):
-            models['t1'].query(invalid_obj)
+            models['t1'].query(invalid_obj).all()
 
     def test_modelmeta_query_4(self, models, t1_t2_query, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         models['t1'].insert(t1_t2_obj)
         models['t1'].insert([t1_t2_obj, t1_t2_obj])
-        query = models['t1'].query(t1_t2_query)
+        query = models['t1'].query(t1_t2_query).all()
         assert len(query) == 4
         query = query[0]
         assert query['c4'] == t1_t2_query['c4']
@@ -136,14 +136,3 @@ class TestAlquimiaModelMeta(object):
         for k, v in models['t1'].items():
             assert models['t1'][k]
         models['t1'].values()
-
-    def test_modelmeta_all(self, models, t1_t2_obj):
-        o1 = models['t1'].insert(t1_t2_obj)
-        o2 = models['t1'].insert(t1_t2_obj)
-        o3 = models['t1'].insert(t1_t2_obj)
-        all_ = models['t1'].all()
-        assert len(all_) == 6
-        all_exp = [o1, o2, o3, o1['t1'], o2['t1'], o3['t1']]
-        all_.sort()
-        all_exp.sort()
-        assert all_ == all_exp

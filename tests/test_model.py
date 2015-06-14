@@ -35,7 +35,7 @@ class TestAlquimiaModel(object):
 
     def test_model_todict(self, models, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
-        obj = models['t2'].query({'c1': 'test12'})[0]
+        obj = models['t2'].query({'c1': 'test12'}).one()
         todict_expected['id'] = obj['id']
         todict_expected['t1'][0]['id'] = obj['t1'][0]['id']
         todict_expected['t1'][0]['t2'] = todict_expected['t1'][0]['t2'] % obj['id']

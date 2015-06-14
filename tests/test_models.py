@@ -108,8 +108,8 @@ class TestAlquimiaModels(object):
         assert len(logs) == 2
         assert logs[0].name == logs[1].name == 'root'
         assert logs[0].levelname == logs[1].levelname == 'WARNING'
-        assert logs[0].msg == 'Alquimia:Removed relationship t6.t2 duplicated from t2.t6'
-        assert logs[1].msg == 'Alquimia:Removed relationship t4.t3 duplicated from t3.t4'
+        assert logs[0].msg == 'alquimia:Removed relationship t6.t2 duplicated from t2.t6'
+        assert logs[1].msg == 'alquimia:Removed relationship t4.t3 duplicated from t3.t4'
 
     def test_rels_list(self, models_create):
         assert len(models_create) == len(rels_expected)

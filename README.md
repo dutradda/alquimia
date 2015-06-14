@@ -32,7 +32,7 @@ person = {
 models['person'].insert(person)
 
 qr =  models['address'].query({'street': "john's street"})
-print qr
+print qr.all()
 ```
 Output:
 ```
