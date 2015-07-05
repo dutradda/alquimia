@@ -18,6 +18,7 @@
 
 import jsonschema
 import logging
+import copy
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, ForeignKey, Table
 from alquimia import SCHEMA, DATA_TYPES
@@ -35,6 +36,7 @@ class AmbiguousRelationshipsError(Exception):
 
 class ModelsAttributes(ModelsAtrrsReflect):
     def __init__(self, dict_, metadata, data_types=DATA_TYPES, logger=logging):
+        dict_ = copy.deepcopy(dict_)
         jsonschema.validate(dict_, SCHEMA)
         self._data_types = data_types
         ModelsAtrrsReflect.__init__(self, metadata, logger, *[dict_])
