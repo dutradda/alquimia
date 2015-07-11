@@ -1,0 +1,45 @@
+// INPUT
+{
+    "t1": ["c1", "c2", {"t3": ["id", "c1"]}],
+    "t2m": {"t2": ["c1", {"t3": "c1"}]},
+    "count": {"t1": "id"},
+
+    "filter": {
+        "t1": {
+            "t2": {"c1": "test"}
+        }
+    },
+    
+    "subqueries": {
+        "t2m": {
+            "t2": [
+                {
+                    "id": {"t1": "t2_id"},
+                    "t3": ["c1"]
+                },
+                "c1"]
+        }
+    },
+
+    "group": [{"t1": "c2"}],
+    "order": {
+        "desc": true,
+        "t2m": {"t2": "c1"}
+    },
+    "distinct": true
+}
+
+
+// OUTPUT
+[{
+    "t1": {
+        "c1": "testc1",
+        "c2": "testc2"
+    },
+    
+    "t2m": {
+        "t2": {"c1": "bla"},
+    },
+    
+    "count": "2"
+}]

@@ -1,0 +1,62 @@
+{
+    "media": {
+        "name": "magico de oz",
+        "artist": {
+            "name": "racionais"
+        }
+    }
+}
+
+{
+    "media": {
+        "name": "magico de oz",
+        "artist": {
+            "name": "racionais"
+        },
+        "album": {
+            "name": "ao vivo"
+        }
+    },
+    "_select": {
+        "artist": "name",
+        "album": "name",
+        "_count": {"artist": "name"}
+    }
+}
+
+{
+    "media": ["name", "year"],
+    "album": ["name"],
+    "artist": ["name"]
+}
+
+{
+    "artist": "name",
+    "_where": {
+        "_or": { 
+            "media": {
+                "name": ["capitulo 4", "negro drama"]
+            },
+            "artist": {
+                "name": {"_or": ["racionais", "criolo", "emicida"]}
+            }
+        },
+        "album": {
+            "name": "ao vivo"
+        }
+    }
+}
+
+{
+    "media": {
+        "name": "magico de oz",
+        "artist": {
+            "name": "racionais",
+            "album": {
+                "name": "ao vivo"
+            }
+        }
+    }
+}
+
+{"artist": {"album": "media"}}
