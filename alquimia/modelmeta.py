@@ -122,6 +122,16 @@ class AlquimiaModelMeta(DeclarativeMeta):
             session.query(cls).filter(cls.id == id_).delete()
         session.commit()
 
+    def _parse_filters(cls, query_dict, obj, filters):
+        for prop_name, prop in query_dict.iteritems():
+            if isinstance(prop, dict):
+                cls._parse_filters(prop, obj[prop_name], filters)
+            else:
+                if hasattr(obj, 'model'):
+                    obj = obj.model
+                filters.append(obj[prop_name] == prop)
+        return filters
+
     def query(cls, filters={}):
-        filters = utils.parse_filters(filters, cls, [])
+        filters = cls._parse_filters(filters, cls, [])
         return cls._session.query(cls).filter(*filters)

@@ -25,14 +25,3 @@ def log(logger, level, message):
         'debug': logger.debug
     }
     levels[level]('alquimia:%s' % message)
-
-
-def parse_filters(query_dict, obj, filters):
-    for prop_name, prop in query_dict.iteritems():
-        if isinstance(prop, dict):
-            parse_filters(prop, obj[prop_name], filters)
-        else:
-            if hasattr(obj, 'model'):
-                obj = obj.model
-            filters.append(obj[prop_name] == prop)
-    return filters
