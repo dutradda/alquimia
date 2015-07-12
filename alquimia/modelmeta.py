@@ -124,12 +124,19 @@ class AlquimiaModelMeta(DeclarativeMeta):
 
     def _parse_filters(cls, query_dict, obj, filters):
         for prop_name, prop in query_dict.iteritems():
-            if isinstance(prop, dict):
-                cls._parse_filters(prop, obj[prop_name], filters)
+            if prop_name == '_and':
+                pass
+            elif prop_name == '_or':
+                pass
             else:
                 if hasattr(obj, 'model'):
                     obj = obj.model
-                filters.append(obj[prop_name] == prop)
+                if isinstance(prop, dict):
+                    cls._parse_filters(prop, obj[prop_name], filters)
+                else:
+                    filter_ = (obj[prop_name] == prop) if not isinstance(prop, str) \
+                        else obj[prop_name].like(prop)
+                    filters.append(filter_)
         return filters
 
     def query(cls, filters={}):

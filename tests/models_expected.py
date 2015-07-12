@@ -103,6 +103,7 @@ def build_models_attributes():
         't7': {
             '__table__': sqlalchemy.Table('t7', metadata,
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
+                sqlalchemy.Column(sqlalchemy.String(255), name='c7'),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t1.id',
                                                                  onupdate='CASCADE',
                                                                  ondelete='CASCADE'),
@@ -114,6 +115,7 @@ def build_models_attributes():
         't8': {
             '__table__': sqlalchemy.Table('t8', metadata,
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
+                sqlalchemy.Column(sqlalchemy.String(255), name='c8'),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t7.id',
                                                                  onupdate='CASCADE',
                                                                  ondelete='CASCADE'),

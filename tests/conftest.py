@@ -18,6 +18,7 @@
 
 import os
 import pytest
+import copy
 from alquimia.models import AlquimiaModels
 from sqlalchemy import MetaData
 
@@ -46,8 +47,14 @@ def user_models():
         't4': {'relationships': ['t1', {'t3': 'one-to-one'}]},
         't5': {'relationships': {'t1': {'many-to-many': True}}},
         't6': {'relationships': [{'t1': 'many-to-many'}, {'t2': 'many-to-many'}]},
-        't7': {'relationships': {'t1': 'one-to-one'}},
-        't8': {'relationships': 't7'}
+        't7': {
+            'c7': 'string',
+            'relationships': {'t1': 'one-to-one'}
+        },
+        't8': {
+            'c8': 'string',
+            'relationships': 't7'
+        }
     }
 
 @pytest.fixture
@@ -121,15 +128,16 @@ def t1_t2_query():
     }
 
 @pytest.fixture
-def t1_t2_query_select():
+def t1_t2_query_or_1():
     return {
-        'c4': 'test1',
-        't2': {
-            'c1': 'test12'
-        },
-        '_select': {
-            't1': ['c3','c9']
-        }
+        '_or': [{
+            'c4': 'test1',
+            't2': {
+                'c1': 'test12'
+            }
+        },{
+            'c4': 'test11'
+        }]
     }
 
 @pytest.fixture
@@ -141,6 +149,50 @@ def t1_t2_obj(t1_simple_obj):
     obj = t1_simple_obj.copy()
     obj.update({'t2': {'c1': 'test12'}, 't1': {'c4': 'test11', 't2': {'c1': 'test123'}}})
     return obj
+
+@pytest.fixture
+def t7_obj():
+    return {
+        'c7': 'test17',
+        't1_id': None
+    }
+
+@pytest.fixture
+def t8_t7_t1_t2_obj(t1_simple_obj):
+    t1 = t1_simple_obj.copy()
+    t1['t2'] = {'c1': 'test12'}
+    return {
+        'c8': 'test18',
+        't7': {
+            'c7': 'test17',
+            't1': t1
+        }
+    }
+
+
+@pytest.fixture
+def t2_t1_t7_t8_query():
+    return {
+            't1': {
+                't7': {
+                   't8': {
+                        'c8': 'test18'
+                   }    
+                }
+            }
+        }
+
+@pytest.fixture
+def t8_t7_t1_t2_query():
+    return {
+            't7': {
+                't1': {
+                    't2': {
+                        'c1': 'test12'
+                    }
+                }
+            }
+        }
 
 @pytest.fixture
 def t1_t2_update():

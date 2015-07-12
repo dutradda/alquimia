@@ -136,3 +136,11 @@ class TestAlquimiaModelMeta(object):
         for k, v in models['t1'].items():
             assert models['t1'][k]
         models['t1'].values()
+
+    def test_modelmeta_query_intrajoin(self, models, t8_t7_t1_t2_obj,
+                                       t2_t1_t7_t8_query, t8_t7_t1_t2_query):
+        t8 = models['t8'].insert(t8_t7_t1_t2_obj)
+        q = models['t8'].query(t8_t7_t1_t2_query)
+        assert q.one() == t8
+        q = models['t2'].query(t2_t1_t7_t8_query)
+        assert q.one() == models['t2'].query().one()
