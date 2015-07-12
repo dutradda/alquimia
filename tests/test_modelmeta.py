@@ -144,3 +144,10 @@ class TestAlquimiaModelMeta(object):
         assert q.one() == t8
         q = models['t2'].query(t2_t1_t7_t8_query)
         assert q.one() == models['t2'].query().one()
+
+    def test_modelmeta_query_like(self, models, t1_t2_obj, t1_t2_query_like):
+        t1 = t1_t2_obj.copy()
+        t1['c4'] = 'testa123'
+        t1 = models['t1'].insert(t1)
+        q = models['t1'].query(t1_t2_query_like)
+        assert t1 == q.one()

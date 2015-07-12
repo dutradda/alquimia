@@ -128,6 +128,15 @@ def t1_t2_query():
     }
 
 @pytest.fixture
+def t1_t2_query_like():
+    return {
+        'c4': 'testa%',
+        't2': {
+            'c1': 'test%'
+        }
+    }
+
+@pytest.fixture
 def t1_t2_query_or_1():
     return {
         '_or': [{
