@@ -43,7 +43,7 @@ def user_models():
             'c1': 'string',
             'relationships': {'t6': 'many-to-many'}
         },
-        't3': {'relationships': {'t4': 'one-to-one'}},
+        't3': {'c1': {'type': 'string'}, 'relationships': {'t4': 'one-to-one'}},
         't4': {'relationships': ['t1', {'t3': 'one-to-one'}]},
         't5': {'relationships': {'t1': {'many-to-many': True}}},
         't6': {'relationships': [{'t1': 'many-to-many'}, {'t2': 'many-to-many'}]},
@@ -137,21 +137,29 @@ def t1_t2_query_like():
     }
 
 @pytest.fixture
-def t1_t2_query_or_1():
+def t1_t2_query_or():
     return {
-        '_or': [{
-            'c4': 'test1',
-            't2': {
-                'c1': 'test12'
+        '_or': [
+            {
+                'c4': 'test1',
+                't2': {
+                    'c1': 'test12'
+                }
+            },{
+                'c4': 'test11'
             }
-        },{
-            'c4': 'test11'
-        }]
+        ]
     }
 
 @pytest.fixture
 def t1_simple_obj():
     return {'c1': True, 'c2': 1, 'c4': 'test1'}
+
+@pytest.fixture
+def t1_t3_obj(t1_simple_obj):
+    obj = t1_simple_obj.copy()
+    obj.update({'t2': {'c1': 'test12'}, 't3': [{'c1': 'test13'}]})
+    return obj
 
 @pytest.fixture
 def t1_t2_obj(t1_simple_obj):

@@ -17,7 +17,7 @@
 
 
 import pytest
-
+import copy
 
 class TestAlquimiaModelMeta(object):
     def test_modelmeta_insert(self, models, t1_t2_obj):
@@ -29,6 +29,12 @@ class TestAlquimiaModelMeta(object):
         assert nobj['c2'] == t1_t2_obj['c2']
         assert nobj['c4'] == t1_t2_obj['c4']
         assert nobj['t2']['c1'] == t1_t2_obj['t2']['c1']
+
+    def test_modelmeta_insert_mtm(self, models, t1_t3_obj):
+        t1_t3 = models['t1'].insert(t1_t3_obj)
+        print t1_t3
+        assert len(t1_t3['t3']) == len(t1_t3_obj['t3'])
+        assert t1_t3['t3'][0]['c1'] == t1_t3_obj['t3'][0]['c1']
 
     def test_modelmeta_insert_invalid(self, models, invalid_obj):
         with pytest.raises(TypeError):
@@ -77,6 +83,17 @@ class TestAlquimiaModelMeta(object):
         obj = s.query(model).filter(model.id == id_).one()
         assert obj['c4'] == t1_t2_update['c4']
         assert obj['t2']['c1'] == t1_t2_update['t2']['c1']
+
+    def test_modelmeta_update_mtm(self, models, t1_t3_obj):
+        t1_t3 = models['t1'].insert(t1_t3_obj)
+        t1_t3_obj = copy.deepcopy(t1_t3_obj)
+        t1_t3_obj['id'] = t1_t3['id']
+        t1_t3_obj['t3'][0]['id'] = t1_t3['t3'][0]['id']
+        t1_t3_obj['t3'][0]['c1'] = 'test13 updated'
+        t1_t3_obj['t3'].append({'c1': 'test132'})
+        updated = models['t1'].update(t1_t3_obj)
+        assert updated['t3'][0]['c1'] == t1_t3_obj['t3'][0]['c1']
+        assert updated['t3'][1]['c1'] == t1_t3_obj['t3'][1]['c1']
 
     def test_modelmeta_update_list(self, models, t1_t2_obj, t1_t2_update):
         model = models['t1']
@@ -145,9 +162,43 @@ class TestAlquimiaModelMeta(object):
         q = models['t2'].query(t2_t1_t7_t8_query)
         assert q.one() == models['t2'].query().one()
 
+    def test_modelmeta_query_mtm(self, models, t1_t3_obj):
+        models['t1'].insert(t1_t3_obj)
+        t1_t3_obj2 = copy.deepcopy(t1_t3_obj)
+        t1_t3_obj2['c1'] = False
+        t1_t3_obj2['t3'][0]['c1'] = 'test13'
+        models['t1'].insert(t1_t3_obj2)
+        q = models['t1'].query({'t1': {'c1': True, 't3': [{'c1': 'test13'}]}}).one()
+        assert q['c1'] == True
+        assert q['t3'][0]['c1'] == 'test13'
+
+    def test_modelmeta_query_mtm_2_t3(self, models, t1_t3_obj):
+        t1_t3_obj['t3'].append({'c1': 'test132'})
+        models['t1'].insert(t1_t3_obj)
+        q = models['t1'].query({'t1': {'t3': [{'c1': 'test13'}, {'c1': 'test132'}]}}).one()
+        assert q['c1'] == True
+        assert q['t3'][0]['c1'] == 'test13'
+        assert q['t3'][1]['c1'] == 'test132'
+
+    def test_modelmeta_query_mtm_2_t1_t3(self, models, t1_t3_obj):
+        models['t1'].insert(t1_t3_obj)
+        t1_t3_obj2 = copy.deepcopy(t1_t3_obj)
+        t1_t3_obj2['c1'] = False
+        t1_t3_obj2['t3'][0]['c1'] = 'test13'
+        models['t1'].insert(t1_t3_obj2)
+        q = models['t1'].query({'t1': {'t3': [{'c1': 'test13'}]}}).all()
+        assert q[0]['c1'] == True
+        assert q[0]['t3'][0]['c1'] == 'test13'
+        assert q[1]['c1'] == False
+        assert q[1]['t3'][0]['c1'] == 'test13'
+
     def test_modelmeta_query_like(self, models, t1_t2_obj, t1_t2_query_like):
         t1 = t1_t2_obj.copy()
         t1['c4'] = 'testa123'
         t1 = models['t1'].insert(t1)
         q = models['t1'].query(t1_t2_query_like)
         assert t1 == q.one()
+
+    def test_modelmeta_or_query(self, models, t1_t2_obj, t1_t2_query_or):
+        models['t1'].insert(t1_t2_obj)
+        assert models['t1'].query().all() == models['t1'].query(t1_t2_query_or).all()

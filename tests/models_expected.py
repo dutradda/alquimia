@@ -66,6 +66,7 @@ def build_models_attributes():
         },
         't3': {
             '__table__': sqlalchemy.Table('t3', metadata,
+                sqlalchemy.Column(sqlalchemy.String(255), name='c1'),
                 sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, name='id'),
                 sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('t4.id',
                                                                  onupdate='CASCADE',
