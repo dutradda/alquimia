@@ -21,9 +21,14 @@ from sqlalchemy.orm.exc import DetachedInstanceError
 
 class AlquimiaModel(object):
     def __init__(self, **kwargs):
+        if 'id' in kwargs:
+            raise Exception("Can't add objects with id!")
         for prop_name, prop in kwargs.iteritems():
             if isinstance(prop, dict):
                 self[prop_name] = type(self)[prop_name].model(**prop)
+            elif isinstance(prop, list):
+                self[prop_name] = [type(self)[prop_name].model(**prop_) \
+                                   if isinstance(prop_, dict) else prop_ for prop_ in prop]
             else:
                 self[prop_name] = prop
         self._session.add(self)

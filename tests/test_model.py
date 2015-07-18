@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
 from tests.models_expected import todict_expected, repr_model_expected
 
 
@@ -58,3 +59,8 @@ class TestAlquimiaModel(object):
         for attr in obj:
             assert obj.has_key(attr)
         obj.remove()
+
+    def test_model_init_id(self, models, t1_simple_obj):
+        with pytest.raises(Exception):
+            t1_simple_obj['id'] = 1
+            models['t1'](**t1_simple_obj)
