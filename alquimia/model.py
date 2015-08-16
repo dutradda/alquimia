@@ -64,36 +64,32 @@ class AlquimiaModel(object):
         if not attr_name in type(self):
             raise TypeError("'%s' is not a valid %s attribute!" %
                                               (attr_name, type(self).__name__))
-            
-    def _todict_part(self, obj, depth, rec_stack):
-        if isinstance(obj, AlquimiaModel):
-            if depth != 0:
-                depth = depth - 1
-                if not obj in rec_stack:
-                    obj = self.todict(depth, obj, rec_stack)
-                else:
-                    obj = '<loaded object at id=%d>' % obj['id']
-            else:
-                obj = '<1 object>'
-        return obj
 
-    def todict(self, depth=0, obj=None, rec_stack=[]):
-        obj = self if obj is None else obj
+    def todict(self, rec_stack=None):
+        if rec_stack is None:
+            rec_stack = []
+
+        if self in rec_stack:
+            return None
+
         dict_ = {}
-        rec_stack.append(obj)
-        for prop_name, prop in obj.items():
-            if isinstance(prop, list):
-                if depth != 0 and len(prop):
+        rec_stack.append(self)
+        for prop_name, prop in self.items():
+            if not prop_name.endswith('_id'):
+                if isinstance(prop, list):
                     propl = []
                     for each in prop:
-                        each = self._todict_part(each, depth, rec_stack)
-                        propl.append(each)
-                    prop = propl
-                else:
-                    prop = '<%d object(s)>' % len(prop)
-            else:
-                prop = self._todict_part(prop, depth, rec_stack)
-            dict_[prop_name] = prop    
+                        each = each.todict(rec_stack)
+                        if each is not None:
+                            propl.append(each)
+                    prop = propl if propl else None
+                
+                elif isinstance(prop, AlquimiaModel):
+                    prop = prop.todict(rec_stack)
+
+                if prop is not None:
+                    dict_[prop_name] = prop
+
         return dict_
 
     def has_key(self, key):

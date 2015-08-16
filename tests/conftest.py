@@ -153,7 +153,7 @@ def t1_t2_query_or():
 
 @pytest.fixture
 def t1_simple_obj():
-    return {'c1': True, 'c2': 1, 'c4': 'test1'}
+    return {'c1': True, 'c2': 1L, 'c4': 'test1'}
 
 @pytest.fixture
 def t1_t3_obj(t1_simple_obj):
@@ -186,6 +186,11 @@ def t8_t7_t1_t2_obj(t1_simple_obj):
         }
     }
 
+@pytest.fixture
+def one_level_obj(t1_simple_obj):
+    obj = t1_simple_obj.copy()
+    obj['t2'] = {'c1': 'test'}
+    return obj
 
 @pytest.fixture
 def t2_t1_t7_t8_query():

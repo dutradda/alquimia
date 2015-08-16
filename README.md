@@ -1,5 +1,5 @@
 # Alquimia
-An API to work with JSON schemas in SQLAlchemy
+An API to work with JSON schemas in SQLAlchemy.
 
 ## Instalation
 ```
@@ -33,10 +33,8 @@ models['person'].insert(person)
 
 qr =  models['address'].query({'street': "john's street"})
 print qr.all()
-```
-Output:
-```
-[{'person': '<1 object(s)>', 'street': u"john's street", 'id': 1}]
+
+[{'person': [{'id': 1, 'age': 78, 'name': u'John'}], 'street': u"john's street", 'id': 1}]
 ```
 
 Detailed usage and documantion is in working process.

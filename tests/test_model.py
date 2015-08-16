@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import copy
 import pytest
-from tests.models_expected import todict_expected, repr_model_expected
 
 
 class TestAlquimiaModel(object):
@@ -37,21 +37,17 @@ class TestAlquimiaModel(object):
     def test_model_todict(self, models, t1_t2_obj):
         models['t1'].insert(t1_t2_obj)
         obj = models['t2'].query({'c1': 'test12'}).one()
-        todict_expected['id'] = obj['id']
-        todict_expected['t1'][0]['id'] = obj['t1'][0]['id']
-        todict_expected['t1'][0]['t2'] = todict_expected['t1'][0]['t2'] % obj['id']
-        todict_expected['t1'][0]['t1_id'] = obj['t1'][0]['t1_id']
-        todict_expected['t1'][0]['t2_id'] = obj['t1'][0]['t2_id']
-        todict_expected['t1'][0]['t1']['id'] = obj['t1'][0]['t1']['id']
-        todict_expected['t1'][0]['t1']['t2_id'] = obj['t1'][0]['t1']['t2_id']
-        todict_expected['t1'][0]['t1']['t2']['id'] = obj['t1'][0]['t1']['t2']['id']
-        todict_expected['t1'][0]['t1']['t2']['t1'][0] = todict_expected['t1'][0]['t1']['t2']['t1'][0] % obj['t1'][0]['t1']['id']
-        assert obj.todict(-1) == todict_expected
-
-    def test_model_repr(self, models, t1_t2_obj):
-        obj = models['t1'].insert(t1_t2_obj)
-        exp = repr_model_expected % (obj['t1_id'], obj['t2_id'], obj['id'])
-        assert repr(obj) == exp
+        
+        t1_t2_obj_cp = copy.deepcopy(t1_t2_obj)
+        obj_exp = t1_t2_obj_cp.pop('t2')
+        obj_exp['t1'] = [t1_t2_obj_cp]
+        obj_exp['id'] = obj['id']
+        obj_exp['t1'][0]['id'] = obj['t1'][0]['id']
+        obj_exp['t1'][0]['c9'] = obj['t1'][0]['c9']
+        obj_exp['t1'][0]['t1']['id'] = obj['t1'][0]['t1']['id']
+        obj_exp['t1'][0]['t1']['c9'] = obj['t1'][0]['t1']['c9']
+        obj_exp['t1'][0]['t1']['t2']['id'] = obj['t1'][0]['t1']['t2']['id']
+        assert obj.todict() == obj_exp
 
     def test_iterator(self, models, t1_t2_obj):
         obj = models['t1'](**t1_t2_obj)
@@ -64,3 +60,12 @@ class TestAlquimiaModel(object):
         with pytest.raises(Exception):
             t1_simple_obj['id'] = 1
             models['t1'](**t1_simple_obj)
+
+    def test_model_one_level(self, models, one_level_obj):
+        models['t1'].insert(one_level_obj)
+        obj = models['t2'].query({'c1': 'test'}).one()
+
+        obj_exp = "{'c1': 'test', 'id': %dL, 't1': " \
+            "[{'c2': 1L, 'c9': 'test', 'c4': 'test1', 'c1': True, 'id': %dL}]}" % \
+            (obj['id'], obj['t1'][0]['id'])
+        assert repr(obj) == obj_exp
